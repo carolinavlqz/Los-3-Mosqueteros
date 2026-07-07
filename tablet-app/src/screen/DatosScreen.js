@@ -58,48 +58,79 @@ export default function DatosScreen() {
     motivo.trim() !== '' && 
     contacto.trim() !== '';
 
-  const handleRegister = async () => {
-    if (!isFormValid) return;
-    
-    setIsLoading(true);
 
-    try {
-      const urlDelServidor = 'http://10.1.17.35:3000/api/proveedores';
-      
-      const response = await fetch(urlDelServidor, {
-        method: 'POST', 
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+
+const handleRegister = async () => {
+  if (!isFormValid) return;
+  setIsLoading(true);
+
+  try {
+    const formData = new FormData();
+    formData.append('pisoSeleccionado', pisoSeleccionado);
+    formData.append('areaSeleccionada', areaSeleccionada);
+    formData.append('empresa', empresa);
+    formData.append('representante', representante);
+    formData.append('motivo', motivo);
+    formData.append('contacto', contacto);
+
+    console.log('Plataforma detectada:', Platform.OS); // 👈 agrega esto también
+    console.log('proveedorPhoto:', proveedorPhoto);
+
+    if (proveedorPhoto) {
+      if (Platform.OS === 'web') {
+        const blob = await fetch(proveedorPhoto).then(r => r.blob());
+        console.log('Blob generado, tamaño:', blob.size); // 👈 y esto
+        formData.append('foto_persona', blob, 'proveedor.jpg');
+      } else {
+        formData.append('foto_persona', {
+          uri: proveedorPhoto,
+          name: 'proveedor.jpg',
+          type: 'image/jpeg',
+        });
+      }
+    }
+
+    if (idPhoto) {
+      if (Platform.OS === 'web') {
+        const blob = await fetch(idPhoto).then(r => r.blob());
+        formData.append('foto_ine', blob, 'ine.jpg');
+      } else {
+        formData.append('foto_ine', {
+          uri: idPhoto,
+          name: 'ine.jpg',
+          type: 'image/jpeg',
+        });
+      }
+    }
+
+    const response = await fetch('http://10.1.17.35:3000/api/proveedores', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      router.push({
+        pathname: '/proveedor-exito',
+        params: {
           pisoSeleccionado,
           areaSeleccionada,
           empresa,
           representante,
-          motivo,
-          contacto,
-          foto_persona: proveedorPhoto,
-          foto_ine: idPhoto            
-        }),
+          folio: data.folio,
+        },
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        router.push({
-          pathname: '/proveedor-exito',
-          params: { pisoSeleccionado, areaSeleccionada, empresa, representante }
-        });
-      } else {
-        Alert.alert('Error', data.mensaje || 'Hubo un problema al registrar la entrada.');
-      }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error de conexión', 'No se pudo conectar con el servidor.');
-    } finally {
-      setIsLoading(false);
+    } else {
+      Alert.alert('Error', data.mensaje || 'Error al registrar.');
     }
-  };
+  } catch (error) {
+    console.error(error);
+    Alert.alert('Error', 'No hay conexión con el servidor.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const renderInput = (id, label, placeholder, value, setValue) => (
     <View style={s.inputContainer}>

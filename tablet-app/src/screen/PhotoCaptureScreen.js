@@ -82,6 +82,8 @@ export default function PhotoCaptureScreen() {
   const handleContinue = () => {
     if (!bothCaptured) return;
     
+    // --- AQUÍ EL CAMBIO CLAVE ---
+    // Pasamos las fotos a la siguiente pantalla
     router.push({
       pathname: '/proveedor-piso',
       params: { 

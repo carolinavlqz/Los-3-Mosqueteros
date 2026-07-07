@@ -56,6 +56,7 @@ export default function PostulanteFormScreen() {
   const [cvEntregado, setCvEntregado] = useState(false); 
   
   const [focusedInput, setFocusedInput] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // Estado para el botón de carga
 
   const isFormValid =
     fotoPostulante &&
@@ -93,12 +94,40 @@ export default function PostulanteFormScreen() {
     }
   };
 
-  const handleRegister = () => {
+  // Función conectada al backend
+  const handleRegister = async () => {
     if (!isFormValid) return;
-    router.push({
-      pathname: '/postulante-exito',
-      params: { nombre, puesto }
-    });
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://10.1.17.35:3000/api/postulantes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre,
+          puesto,
+          area,
+          responsable,
+          tipoCita,
+          cvEntregado,
+          foto_persona: fotoPostulante,
+          foto_ine: fotoId
+        }),
+      });
+
+      if (response.ok) {
+        router.push({
+          pathname: '/postulante-exito',
+          params: { nombre, puesto }
+        });
+      } else {
+        Alert.alert('Error', 'No se pudo registrar la visita.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No hay conexión con el servidor.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderCaptureBox = (field, photo, label) => (
@@ -106,7 +135,7 @@ export default function PostulanteFormScreen() {
       style={[s.captureBox, useRowLayout && s.captureBoxRow, photo && s.captureBoxFilled]}
       activeOpacity={0.85}
       onPress={() => capturePhoto(field)}
-      disabled={loadingField === field}
+      disabled={loadingField === field || isLoading}
     >
       {photo ? (
         <>
@@ -138,6 +167,7 @@ export default function PostulanteFormScreen() {
         onFocus={() => setFocusedInput(id)}
         onBlur={() => setFocusedInput(null)}
         autoCapitalize="words"
+        editable={!isLoading}
       />
     </View>
   );
@@ -154,10 +184,10 @@ export default function PostulanteFormScreen() {
               {/* Header */}
               <View style={s.header}>
                 <View style={s.headerTopRow}>
-                  <TouchableOpacity onPress={() => router.back()} style={s.iconButton}>
+                  <TouchableOpacity onPress={() => router.back()} style={s.iconButton} disabled={isLoading}>
                     <Ionicons name="chevron-back" size={22 * scale} color="#ffffff" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton}>
+                  <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton} disabled={isLoading}>
                     <Ionicons name="home-outline" size={20 * scale} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
@@ -194,7 +224,7 @@ export default function PostulanteFormScreen() {
                 <TouchableOpacity 
                   style={s.checkboxRow} 
                   activeOpacity={0.7} 
-                  onPress={() => setCvEntregado(!cvEntregado)}
+                  onPress={() => !isLoading && setCvEntregado(!cvEntregado)}
                 >
                   <View style={[s.checkbox, cvEntregado && s.checkboxChecked]}>
                     {cvEntregado && <Ionicons name="checkmark" size={16 * scale} color="#ffffff" />}
@@ -204,13 +234,15 @@ export default function PostulanteFormScreen() {
 
                 {/* Botón Final */}
                 <TouchableOpacity
-                  style={[s.registerButton, !isFormValid && s.registerButtonDisabled]}
-                  onPress={() => router.push('/postulante-exito')}
-                  disabled={!isFormValid}
+                  style={[s.registerButton, (!isFormValid || isLoading) && s.registerButtonDisabled]}
+                  onPress={handleRegister}
+                  disabled={!isFormValid || isLoading}
                   activeOpacity={0.85}
                 >
-                  <Text style={s.registerText}>Registrar Entrada</Text>
-                  <Ionicons name="checkmark" size={20 * scale} color="#ffffff" style={{marginLeft: 8}} />
+                  <Text style={s.registerText}>
+                    {isLoading ? 'Guardando...' : 'Registrar Entrada'}
+                  </Text>
+                  {!isLoading && <Ionicons name="checkmark" size={20 * scale} color="#ffffff" style={{marginLeft: 8}} />}
                 </TouchableOpacity>
               </View>
 
@@ -262,12 +294,10 @@ const createStyles = (scale) =>
     textInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, fontSize: 15 * scale, color: '#111827' },
     textInputFocused: { borderColor: '#284b82', backgroundColor: '#ffffff', borderWidth: 2 },
 
-    // Estilos del recuadro amarillo/naranja
     postulacionCard: { backgroundColor: '#fef3c7', padding: 16 * scale, borderRadius: 12, marginBottom: 20 * scale, marginTop: 10 * scale, borderWidth: 1, borderColor: '#fde68a' },
     postulacionTitle: { color: '#b45309', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
     postulacionSubtitle: { color: '#d97706', fontSize: 14 * scale, marginTop: 4 },
 
-    // Estilos del Checkbox de CV
     checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 * scale, marginTop: 4 * scale, backgroundColor: '#ffffff', padding: 16 * scale, borderRadius: 12, borderWidth: 1, borderColor: '#d1d5db' },
     checkbox: { width: 24 * scale, height: 24 * scale, borderRadius: 6, borderWidth: 2, borderColor: '#9ca3af', marginRight: 12 * scale, alignItems: 'center', justifyContent: 'center' },
     checkboxChecked: { backgroundColor: '#284b82', borderColor: '#284b82' },

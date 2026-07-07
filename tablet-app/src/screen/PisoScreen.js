@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import {
   View,
   Text,
@@ -44,6 +44,8 @@ const PISOS = [
 
 export default function PisoScreen() {
   const router = useRouter();
+  // Ahora que importaste useLocalSearchParams, esto funcionará:
+  const { proveedorPhoto, idPhoto } = useLocalSearchParams(); 
   const { isLandscape, isTablet, contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
@@ -53,7 +55,11 @@ export default function PisoScreen() {
     if (!selectedPiso) return;
     router.push({
       pathname: '/proveedor-area',
-      params: { pisoSeleccionado: selectedPiso.name }
+      params: { 
+        pisoSeleccionado: selectedPiso.name,
+        proveedorPhoto, 
+        idPhoto 
+      },
     });
   };
 

@@ -61,13 +61,13 @@ const AREAS_POR_PISO = {
 };
 
 export default function AreaScreen() {
-  const router = useRouter();
-  const { pisoSeleccionado } = useLocalSearchParams();
+ const router = useRouter();
+  // Ahora que importaste useLocalSearchParams, esto funcionará:
+  const { pisoSeleccionado, proveedorPhoto, idPhoto } = useLocalSearchParams();
   const { isLandscape, isTablet, contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
   const [selectedArea, setSelectedArea] = useState(null);
-
   const areasDisponibles = AREAS_POR_PISO[pisoSeleccionado] || [];
 
   const handleContinue = () => {
@@ -76,7 +76,9 @@ export default function AreaScreen() {
       pathname: '/proveedor-datos',
       params: { 
         pisoSeleccionado: pisoSeleccionado,
-        areaSeleccionada: selectedArea 
+        areaSeleccionada: selectedArea,
+        proveedorPhoto, 
+        idPhoto 
       }
     });
   };

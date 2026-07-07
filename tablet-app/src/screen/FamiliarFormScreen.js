@@ -89,14 +89,14 @@ export default function FamiliarFormScreen() {
     }
   };
 
-const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
 const handleRegister = async () => {
   if (!isFormValid) return;
   setIsLoading(true);
 
   try {
-    const response = await fetch('http:/10.1.17.35/:3000/api/familiares', {
+    const response = await fetch('http://10.1.17.35:3000/api/familiares', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -106,16 +106,19 @@ const handleRegister = async () => {
       }),
     });
 
+    const data = await response.json();
+
     if (response.ok) {
+      // Navegamos pasando el folio que nos devolvió el servidor
       router.push({
         pathname: '/familiar-exito',
-        params: { nombre, habitacion }
+        params: { nombre, habitacion, folio: data.folio }
       });
     } else {
-      Alert.alert('Error', 'No se pudo registrar la visita.');
+      Alert.alert('Error', 'No se pudo registrar.');
     }
   } catch (error) {
-    Alert.alert('Error', 'No hay conexión con el servidor.');
+    Alert.alert('Error', 'No hay conexión.');
   } finally {
     setIsLoading(false);
   }
@@ -213,10 +216,10 @@ const handleRegister = async () => {
                 <TouchableOpacity
                   style={[s.registerButton, !isFormValid && s.registerButtonDisabled]}
                   onPress={handleRegister}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || isLoading}
                   activeOpacity={0.85}
                 >
-                  <Text style={s.registerText}>Registrar Entrada</Text>
+                  <Text style={s.registerText}>{isLoading ? 'Guardando...' : 'Registrar Entrada'}</Text>
                   <Ionicons name="checkmark" size={20 * scale} color="#ffffff" style={{marginLeft: 8}} />
                 </TouchableOpacity>
               </View>
@@ -253,7 +256,7 @@ const createStyles = (scale) =>
     captureContainer: { gap: 16 * scale, marginBottom: 24 * scale },
     captureContainerRow: { flexDirection: 'row' },
     captureBox: {
-      aspectRatio: 1.5, // Más rectangular como en tu diseño
+      aspectRatio: 1.5,
       borderWidth: 2, borderColor: '#d1d5db', borderStyle: 'dashed', borderRadius: 16,
       justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb', overflow: 'hidden',
     },

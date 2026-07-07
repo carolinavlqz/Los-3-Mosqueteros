@@ -34,27 +34,20 @@ function useScale() {
 
 export default function ExitoScreen() {
   const router = useRouter();
-  const { pisoSeleccionado, areaSeleccionada, empresa, representante } = useLocalSearchParams();
+  // Recibimos el folio real desde los params
+  const { pisoSeleccionado, areaSeleccionada, empresa, representante, folio } = useLocalSearchParams();
   const { contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
-  const [folio, setFolio] = useState('');
   const [horaEntrada, setHoraEntrada] = useState('');
 
   useEffect(() => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = 'VIS-';
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setFolio(result);
-
+    // Ya no generamos un folio aleatorio aquí, usamos el que llega de la BD
     const now = new Date();
     let hours = now.getHours();
     let minutes = now.getMinutes();
     const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
+    hours = hours % 12 || 12;
     minutes = minutes < 10 ? '0' + minutes : minutes;
     setHoraEntrada(`${hours}:${minutes} ${ampm}`);
   }, []);

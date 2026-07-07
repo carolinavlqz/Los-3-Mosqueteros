@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   TextInput,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -21,43 +22,59 @@ const MAX_CONTENT_WIDTH_TABLET = 760;
 
 function useScale() {
   const { width } = useWindowDimensions();
-  const isLandscape = width > width;
   const isTablet = width >= TABLET_BREAKPOINT;
   const contentWidth = isTablet ? Math.min(width * 0.9, MAX_CONTENT_WIDTH_TABLET) : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
   const scale = Math.max(0.85, Math.min(contentWidth / BASE_WIDTH, 1.3));
-  return { isLandscape, isTablet, contentWidth, scale };
+  return { isTablet, contentWidth, scale };
 }
-
-const MOCK_HISTORY = [
-  { id: '1', nombre: 'Carlos Mendoza Reyes', tipo: 'Proveedor', folio: 'MIA-2847', horaEntrada: '09:14', horaSalida: null, destino: 'Piso 2 — Hospitalización Ala A', estado: 'activo', fecha: 'Hoy' },
-  { id: '2', nombre: 'María González López', tipo: 'Familiar', folio: 'MIA-2846', horaEntrada: '08:50', horaSalida: '11:20', destino: 'Piso 1 — Consultorios Externos', estado: 'completado', fecha: 'Hoy' },
-  { id: '3', nombre: 'Ing. Roberto Salinas', tipo: 'Proveedor', folio: 'MIA-2845', horaEntrada: '08:22', horaSalida: '10:45', destino: 'Piso 3 — Quirófanos', estado: 'completado', fecha: 'Hoy' },
-  { id: '4', nombre: 'Laura Castillo Vega', tipo: 'Postulante', folio: 'MIA-2844', horaEntrada: '08:05', horaSalida: '09:30', destino: 'Piso 4 — Recursos Humanos', estado: 'completado', fecha: 'Hoy' },
-  { id: '5', nombre: 'Distribuidora Farmacias SA', tipo: 'Proveedor', folio: 'MIA-2843', horaEntrada: '14:30', horaSalida: '15:10', destino: 'Planta Baja — Farmacia', estado: 'completado', fecha: 'Ayer' },
-];
 
 export default function HistorialScreen() {
   const router = useRouter();
   const { contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('Todos');
+
+  // 1. Cargar datos reales desde MySQL
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('http://10.1.17.35:3000/api/visitas/historial');
+        const data = await res.json();
+        console.log("Datos del historial recibidos:", data);
+        setHistory(data);
+      } catch (error) {
+        console.error("Error al cargar historial:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const filters = ['Todos', 'Proveedor', 'Familiar', 'Postulante'];
 
   const filteredHistory = useMemo(() => {
-    return MOCK_HISTORY.filter(v => {
-      const matchesSearch = v.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || v.folio.toLowerCase().includes(searchQuery.toLowerCase());
+    return history.filter(v => {
+      // Filtrar campos nulos por si hay registros rotos
+      const nombreValido = v.nombre ? v.nombre.toLowerCase() : '';
+      const folioValido = v.folio ? v.folio.toLowerCase() : '';
+      const busqueda = searchQuery.toLowerCase();
+
+      const matchesSearch = nombreValido.includes(busqueda) || folioValido.includes(busqueda);
       const matchesType = activeFilter === 'Todos' || v.tipo === activeFilter;
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, activeFilter]);
+  }, [history, searchQuery, activeFilter]);
 
-  const hoyStats = MOCK_HISTORY.filter(v => v.fecha === 'Hoy');
+  const hoyStats = useMemo(() => history.filter(v => v.fecha === 'Hoy'), [history]);
   const totalHoy = hoyStats.length;
-  const activosHoy = hoyStats.filter(v => v.estado === 'activo').length;
-  const completadosHoy = hoyStats.filter(v => v.estado === 'completado').length;
+  // Ajuste: MySQL guarda el estado como 'activa' o 'finalizada'
+  const activosHoy = hoyStats.filter(v => v.estado === 'activa').length;
+  const completadosHoy = hoyStats.filter(v => v.estado === 'finalizada').length;
 
   const getBadgeStyle = (tipo) => {
     switch (tipo) {
@@ -67,6 +84,7 @@ export default function HistorialScreen() {
       default: return s.badgeProveedor;
     }
   };
+
   const getBadgeTextStyle = (tipo) => {
     switch (tipo) {
       case 'Proveedor': return s.badgeTextProveedor;
@@ -80,7 +98,6 @@ export default function HistorialScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#284b82" />
 
-      {/* Header */}
       <View style={s.header}>
         <View style={s.headerContentContainer}>
           <View style={s.headerTopRow}>
@@ -99,7 +116,6 @@ export default function HistorialScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center' }}>
         <View style={[s.container, { width: contentWidth }]}>
           
-          {/* Buscador */}
           <View style={s.searchContainer}>
             <Ionicons name="search-outline" size={20 * scale} color="#9ca3af" />
             <TextInput
@@ -111,7 +127,6 @@ export default function HistorialScreen() {
             />
           </View>
 
-          {/* Filtros de Tipo */}
           <View style={s.filtersContainer}>
             {filters.map((filter, i) => (
               <TouchableOpacity
@@ -124,58 +139,54 @@ export default function HistorialScreen() {
             ))}
           </View>
 
-          {/* Tarjetas de Estadísticas */}
           <View style={s.statsRow}>
-            <View style={s.statCard}>
-              <Text style={[s.statNumber, {color: '#1e3a68'}]}>{totalHoy}</Text>
-              <Text style={s.statLabel}>Total hoy</Text>
-            </View>
-            <View style={s.statCard}>
-              <Text style={[s.statNumber, {color: '#00a884'}]}>{activosHoy}</Text>
-              <Text style={s.statLabel}>Activos</Text>
-            </View>
-            <View style={s.statCard}>
-              <Text style={[s.statNumber, {color: '#6b7280'}]}>{completadosHoy}</Text>
-              <Text style={s.statLabel}>Completados</Text>
-            </View>
+            <View style={s.statCard}><Text style={[s.statNumber, {color: '#1e3a68'}]}>{totalHoy}</Text><Text style={s.statLabel}>Total hoy</Text></View>
+            <View style={s.statCard}><Text style={[s.statNumber, {color: '#00a884'}]}>{activosHoy}</Text><Text style={s.statLabel}>Activos</Text></View>
+            <View style={s.statCard}><Text style={[s.statNumber, {color: '#6b7280'}]}>{completadosHoy}</Text><Text style={s.statLabel}>Completados</Text></View>
           </View>
 
-          {/* Lista de Registros */}
           <Text style={s.sectionHeader}>HOY · {hoyStats.length} REGISTROS</Text>
-          <View style={s.listContainer}>
-            {filteredHistory.filter(v => v.fecha === 'Hoy').map(v => (
-              <View key={v.id} style={s.card}>
-                <View style={s.cardContent}>
-                  <View style={{flex: 1}}>
-                    <Text style={s.visitorName}>{v.nombre}</Text>
-                    <View style={s.badgesRow}>
-                      <View style={[s.badge, getBadgeStyle(v.tipo)]}>
-                        <Text style={[s.badgeText, getBadgeTextStyle(v.tipo)]}>{v.tipo}</Text>
+          
+          {loading ? (
+            <ActivityIndicator size="large" color="#284b82" style={{marginTop: 50}} />
+          ) : (
+            <View style={s.listContainer}>
+              {filteredHistory.filter(v => v.fecha === 'Hoy').map(v => (
+                <View key={v.id} style={s.card}>
+                  <View style={s.cardContent}>
+                    <View style={{flex: 1}}>
+                      <Text style={s.visitorName}>{v.nombre || 'Sin nombre'}</Text>
+                      <View style={s.badgesRow}>
+                        <View style={[s.badge, getBadgeStyle(v.tipo)]}>
+                          <Text style={[s.badgeText, getBadgeTextStyle(v.tipo)]}>{v.tipo}</Text>
+                        </View>
+                        <Text style={s.folioText}>{v.folio}</Text>
                       </View>
-                      <Text style={s.folioText}>{v.folio}</Text>
-                    </View>
-                    <View style={s.locationRow}>
-                      <Ionicons name="location-outline" size={14 * scale} color="#9ca3af" />
-                      <Text style={s.locationText}>{v.destino}</Text>
-                    </View>
-                  </View>
-                  
-                  {/* Tiempos (E: / S:) */}
-                  <View style={s.timesContainer}>
-                    <Text style={s.timeText}>E: <Text style={s.timeValue}>{v.horaEntrada}</Text></Text>
-                    {v.estado === 'activo' ? (
-                      <View style={s.activeBadge}>
-                        <Text style={s.activeBadgeText}>Activo</Text>
+                      <View style={s.locationRow}>
+                        <Ionicons name="location-outline" size={14 * scale} color="#9ca3af" />
+                        <Text style={s.locationText}>{v.destino || 'Sin destino asignado'}</Text>
                       </View>
-                    ) : (
-                      <Text style={s.timeText}>S: <Text style={s.timeValue}>{v.horaSalida}</Text></Text>
-                    )}
+                    </View>
+                    <View style={s.timesContainer}>
+                      <Text style={s.timeText}>E: <Text style={s.timeValue}>{v.horaEntrada}</Text></Text>
+                      {v.estado === 'activa' ? (
+                        <View style={s.activeBadge}><Text style={s.activeBadgeText}>Activo</Text></View>
+                      ) : (
+                        <Text style={s.timeText}>S: <Text style={s.timeValue}>{v.horaSalida}</Text></Text>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
-          </View>
-
+              ))}
+              
+              {/* Mensaje por si la lista está vacía */}
+              {filteredHistory.filter(v => v.fecha === 'Hoy').length === 0 && (
+                <Text style={{ textAlign: 'center', color: '#9ca3af', marginTop: 20 * scale }}>
+                  No se encontraron registros que coincidan.
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

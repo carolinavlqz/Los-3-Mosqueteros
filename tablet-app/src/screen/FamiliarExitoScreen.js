@@ -34,17 +34,16 @@ function useScale() {
 
 export default function FamiliarExitoScreen() {
   const router = useRouter();
-  const { nombre, habitacion } = useLocalSearchParams();
+  // 1. AQUÍ RECIBIMOS EL FOLIO REAL QUE NOS MANDÓ EL FORMULARIO
+  const { nombre, habitacion, folio } = useLocalSearchParams();
   const { contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
-  const [folio, setFolio] = useState('');
   const [hora, setHora] = useState('');
   const [fecha, setFecha] = useState('');
 
   useEffect(() => {
-    // Generar Folio tipo MIA-XXXX
-    setFolio(`MIA-${Math.floor(1000 + Math.random() * 9000)}`);
+    // 2. YA NO GENERAMOS FOLIOS FALSOS AQUÍ
 
     const now = new Date();
     // Hora
@@ -98,6 +97,7 @@ export default function FamiliarExitoScreen() {
               <View style={s.ticketHeader}>
                 <View style={s.ticketHeaderCol}>
                   <Text style={s.ticketLabelLight}>FOLIO</Text>
+                  {/* 3. IMPRIMIMOS EL FOLIO REAL */}
                   <Text style={s.ticketValueBig}>{folio}</Text>
                 </View>
                 <View style={[s.ticketHeaderCol, { alignItems: 'flex-end' }]}>
@@ -155,8 +155,8 @@ const createStyles = (scale) =>
     
     ticketBody: { padding: 24 * scale },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
-    rowValue: { color: '#111827', fontSize: 14 * scale, fontWeight: '600' },
+    rowLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, flex: 0.35 },
+    rowValue: { color: '#111827', fontSize: 14 * scale, fontWeight: '600', flex: 0.65, textAlign: 'right' },
     rowValueBlue: { color: '#0284c7', fontWeight: 'bold' },
     divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 16 * scale },
 

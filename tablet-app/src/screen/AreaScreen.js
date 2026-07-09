@@ -7,31 +7,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  useWindowDimensions,
   Platform,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const BASE_WIDTH = 375;
-const TABLET_BREAKPOINT = 600;
-const MAX_CONTENT_WIDTH_PHONE = 480;
-const MAX_CONTENT_WIDTH_TABLET = 760;
-
-function useScale() {
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
-  const isTablet = width >= TABLET_BREAKPOINT;
-
-  const contentWidth = isTablet
-    ? Math.min(width * 0.9, MAX_CONTENT_WIDTH_TABLET)
-    : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
-
-  const rawScale = contentWidth / BASE_WIDTH;
-  const scale = Math.max(0.85, Math.min(rawScale, 1.3));
-
-  return { isLandscape, isTablet, contentWidth, scale };
-}
+import { COLORS } from '../theme/colors';
+import { useScale } from '../hooks/useScale';
 
 const AREAS_POR_PISO = {
   'Sótano': [
@@ -85,7 +66,7 @@ export default function AreaScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a355b" />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={s.outerContainer}>
@@ -94,7 +75,7 @@ export default function AreaScreen() {
             {/* Header */}
             <View style={[s.header, (isLandscape || isTablet) && s.headerLandscape]}>
               <TouchableOpacity onPress={() => router.back()} style={s.backButton}>
-                <Ionicons name="chevron-back" size={22 * scale} color="#8ba4c9" />
+                <Ionicons name="chevron-back" size={22 * scale} color={COLORS.periwinkle} />
                 <Text style={s.backText}>Regresar</Text>
               </TouchableOpacity>
               <Text style={s.stepTitle}>REGISTRO — PROVEEDOR</Text>
@@ -131,7 +112,7 @@ export default function AreaScreen() {
               
               {/* Indicador del Piso Seleccionado */}
               <View style={s.locationIndicator}>
-                <Ionicons name="location-outline" size={20 * scale} color="#00a884" />
+                <Ionicons name="location-outline" size={20 * scale} color={COLORS.royalBlue} />
                 <Text style={s.locationText}>{pisoSeleccionado || 'Piso no seleccionado'}</Text>
               </View>
 
@@ -150,7 +131,7 @@ export default function AreaScreen() {
                       
                       {isSelected && (
                         <View style={s.checkIconContainer}>
-                          <Ionicons name="checkmark" size={18 * scale} color="#00a884" />
+                          <Ionicons name="checkmark" size={18 * scale} color={COLORS.royalBlue} />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -181,7 +162,7 @@ const createStyles = (scale) =>
     container: { flex: 1 },
 
     header: {
-      backgroundColor: '#1a355b',
+      backgroundColor: COLORS.palatinateBlue,
       paddingHorizontal: 28 * scale,
       paddingTop: Platform.OS === 'android' ? 40 : 20,
       paddingBottom: 28 * scale,
@@ -190,27 +171,27 @@ const createStyles = (scale) =>
     },
     headerLandscape: { paddingHorizontal: 48 * scale },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
-    backText: { color: '#8ba4c9', fontSize: 15 * scale, marginLeft: 2 },
-    stepTitle: { color: '#00a884', fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
-    mainTitle: { color: '#ffffff', fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
+    backText: { color: COLORS.periwinkle, fontSize: 15 * scale, marginLeft: 2 },
+    stepTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
+    mainTitle: { color: COLORS.white, fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
 
     stepper: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 * scale },
-    stepCompleted: { backgroundColor: '#00a884', width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepActive: { backgroundColor: '#00a884', width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
+    stepCompleted: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
+    stepActive: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
     stepInactive: { borderColor: 'rgba(255,255,255,0.25)', borderWidth: 2, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepTextActive: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 * scale },
-    stepTextInactive: { color: '#8ba4c9', fontWeight: 'bold', fontSize: 14 * scale },
+    stepTextActive: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 * scale },
+    stepTextInactive: { color: COLORS.periwinkle, fontWeight: 'bold', fontSize: 14 * scale },
     stepLine: { width: 32 * scale, height: 2, backgroundColor: 'rgba(255,255,255,0.2)' },
-    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: '#00a884' },
+    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: COLORS.royalBlue },
     stepLabels: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 26 * scale },
-    labelActive: { color: '#00a884', fontSize: 12 * scale, fontWeight: '600' },
-    labelInactive: { color: '#5b7398', fontSize: 12 * scale },
+    labelActive: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '600' },
+    labelInactive: { color: COLORS.periwinkle, fontSize: 12 * scale },
 
     bottomSection: { flex: 1, paddingHorizontal: 28 * scale, paddingTop: 24 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
     bottomSectionLandscape: { paddingHorizontal: 48 * scale },
 
     locationIndicator: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 * scale },
-    locationText: { color: '#00a884', fontSize: 15 * scale, fontWeight: 'bold', marginLeft: 6 },
+    locationText: { color: COLORS.royalBlue, fontSize: 15 * scale, fontWeight: 'bold', marginLeft: 6 },
 
     gridContainer: {
       flexDirection: 'row',
@@ -235,14 +216,14 @@ const createStyles = (scale) =>
       justifyContent: 'center',
     },
     cardSelected: {
-      borderColor: '#00a884',
-      backgroundColor: '#e6f7f4',
+      borderColor: COLORS.royalBlue,
+      backgroundColor: COLORS.royalBlueSoft,
     },
-    cardName: { color: '#1e3a68', fontSize: 14 * scale, fontWeight: '700' },
-    textSelected: { color: '#0fa38b' },
+    cardName: { color: COLORS.palatinateBlue, fontSize: 14 * scale, fontWeight: '700' },
+    textSelected: { color: COLORS.royalBlue },
     checkIconContainer: { position: 'absolute', bottom: 12 * scale, right: 12 * scale },
 
-    continueButton: { backgroundColor: '#00a884', padding: 18 * scale, borderRadius: 16, alignItems: 'center', marginTop: 10 },
-    continueButtonDisabled: { backgroundColor: '#a7c4b9' },
-    continueText: { color: '#ffffff', fontSize: 17 * scale, fontWeight: 'bold' },
+    continueButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center', marginTop: 10 },
+    continueButtonDisabled: { backgroundColor: COLORS.silver },
+    continueText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
   });

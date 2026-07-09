@@ -7,118 +7,95 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  useWindowDimensions,
-  Platform,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const BASE_WIDTH = 375;
-const TABLET_BREAKPOINT = 600;
-const MAX_CONTENT_WIDTH_PHONE = 480;
-const MAX_CONTENT_WIDTH_TABLET = 600;
-
-function useScale() {
-  const { width, height } = useWindowDimensions();
-  const isTablet = width >= TABLET_BREAKPOINT;
-
-  const contentWidth = isTablet
-    ? Math.min(width * 0.7, MAX_CONTENT_WIDTH_TABLET)
-    : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
-
-  const rawScale = contentWidth / BASE_WIDTH;
-  const scale = Math.max(0.85, Math.min(rawScale, 1.25));
-
-  return { contentWidth, scale };
-}
+import { COLORS } from '../theme/colors';
+import { useScale } from '../hooks/useScale';
 
 export default function ExitoScreen() {
   const router = useRouter();
-  // Recibimos el folio real desde los params
   const { pisoSeleccionado, areaSeleccionada, empresa, representante, folio } = useLocalSearchParams();
-  const { contentWidth, scale } = useScale();
+  const { contentWidth, scale } = useScale({ maxContentWidthTablet: 600, tabletWidthRatio: 0.7, maxScale: 1.25 });
   const s = createStyles(scale);
 
-  const [horaEntrada, setHoraEntrada] = useState('');
+  const [hora, setHora] = useState('');
+  const [fecha, setFecha] = useState('');
 
   useEffect(() => {
-    // Ya no generamos un folio aleatorio aquí, usamos el que llega de la BD
     const now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
-    const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
-    hours = hours % 12 || 12;
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    setHoraEntrada(`${hours}:${minutes} ${ampm}`);
+    // Hora
+    let h = now.getHours();
+    let m = now.getMinutes();
+    const ampm = h >= 12 ? 'p.m.' : 'a.m.';
+    h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
+    setHora(`${h}:${m} ${ampm}`);
+
+    // Fecha
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    setFecha(now.toLocaleDateString('es-MX', options));
   }, []);
 
-  const handleFinish = () => {
-    router.replace('/');
-  };
+  const handleFinish = () => router.replace('/');
 
-  const renderInfoRow = (label, value, isHighlighted = false) => (
-    <View style={s.infoRow}>
-      <Text style={s.infoLabel}>{label}</Text>
-      <Text style={[s.infoValue, isHighlighted && s.infoValueHighlighted]}>{value}</Text>
+  const renderRow = (label, value, isHighlighted = false) => (
+    <View style={s.row}>
+      <Text style={s.rowLabel}>{label}</Text>
+      <Text style={[s.rowValue, isHighlighted && s.rowValueBlue]}>{value}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#f4f6f9" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.royalBlueSoft} />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingVertical: 20 }}>
         <View style={s.outerContainer}>
           <View style={[s.container, { width: contentWidth }]}>
-            
-            {/* Header / Icono de Éxito */}
-            <View style={s.headerSection}>
-              <View style={s.successIconCircle}>
-                <Ionicons name="checkmark" size={60 * scale} color="#00a884" />
-              </View>
-              <Text style={s.title}>Entrada Registrada</Text>
-              <Text style={s.subtitle}>Registro completado exitosamente</Text>
-            </View>
 
-            {/* Tarjeta de Resumen (Ticket) */}
+            {/* Ícono y Títulos */}
+            <View style={s.iconContainer}>
+              <View style={s.checkCircle}>
+                <Ionicons name="checkmark" size={50 * scale} color="#ffffff" />
+              </View>
+            </View>
+            <Text style={s.title}>¡Registro Exitoso!</Text>
+            <Text style={s.subtitle}>
+              La entrada ha sido registrada correctamente en el sistema de Médica MIA.
+            </Text>
+
+            {/* Ticket Card */}
             <View style={s.ticketCard}>
               <View style={s.ticketHeader}>
-                <View>
-                  <Text style={s.folioLabel}>FOLIO DE REGISTRO</Text>
-                  <Text style={s.folioValue}>{folio}</Text>
+                <View style={s.ticketHeaderCol}>
+                  <Text style={s.ticketLabelLight}>FOLIO</Text>
+                  <Text style={s.ticketValueBig}>{folio}</Text>
                 </View>
-                <View style={s.statusBadge}>
-                  <View style={s.statusDot} />
-                  <Text style={s.statusText}>Activo</Text>
+                <View style={[s.ticketHeaderCol, { alignItems: 'flex-end' }]}>
+                  <Text style={s.ticketLabelLight}>HORA</Text>
+                  <Text style={s.ticketValueBig}>{hora}</Text>
                 </View>
               </View>
-
-              <View style={s.divider} />
 
               <View style={s.ticketBody}>
-                {renderInfoRow('NOMBRE', representante || 'N/A')}
-                {renderInfoRow('TIPO', 'Proveedor', true)}
-                {renderInfoRow('EMPRESA', empresa || 'N/A')}
-                {renderInfoRow('DESTINO', `${pisoSeleccionado} — ${areaSeleccionada}`)}
-                {renderInfoRow('HORA DE ENTRADA', horaEntrada)}
+                {renderRow('EMPRESA', empresa || 'N/A')}
+                <View style={s.divider} />
+                {renderRow('REPRESENTANTE', representante || 'N/A')}
+                <View style={s.divider} />
+                {renderRow('DESTINO', `${pisoSeleccionado} — ${areaSeleccionada}`)}
+                <View style={s.divider} />
+                {renderRow('FECHA', fecha)}
+                <View style={s.divider} />
+                {renderRow('ESTADO', '● Activo — En instalaciones', true)}
+                <View style={s.divider} />
+                {renderRow('INSTRUCCIÓN', 'Recoger gafete de visitante en recepción')}
               </View>
             </View>
 
-            {/* Aviso de Gafete */}
-            <View style={s.warningCard}>
-              <Ionicons name="id-card-outline" size={32 * scale} color="#d97706" />
-              <Text style={s.warningText}>
-                Recoger <Text style={{fontWeight: 'bold'}}>gafete de visitante</Text> en recepción antes de ingresar.
-              </Text>
-            </View>
-
-            {/* Botón Finalizar */}
-            <TouchableOpacity
-              style={s.finishButton}
-              onPress={handleFinish}
-              activeOpacity={0.85}
-            >
-              <Text style={s.finishButtonText}>Volver al inicio</Text>
+            {/* Botón Volver */}
+            <TouchableOpacity style={s.homeButton} onPress={handleFinish} activeOpacity={0.85}>
+              <Ionicons name="home-outline" size={20 * scale} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={s.homeButtonText}>Volver al Inicio</Text>
             </TouchableOpacity>
 
           </View>
@@ -130,63 +107,29 @@ export default function ExitoScreen() {
 
 const createStyles = (scale) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#1a355b' },
-    outerContainer: { flex: 1, alignItems: 'center', paddingVertical: 40 * scale },
-    container: { flex: 1, paddingHorizontal: 20 * scale },
+    safeArea: { flex: 1, backgroundColor: COLORS.royalBlueSoft },
+    outerContainer: { flex: 1, alignItems: 'center' },
+    container: { flex: 1, paddingHorizontal: 20 * scale, paddingTop: 20 * scale },
 
-    headerSection: { alignItems: 'center', marginBottom: 32 * scale },
-    successIconCircle: {
-      width: 100 * scale,
-      height: 100 * scale,
-      borderRadius: 50 * scale,
-      backgroundColor: 'rgba(0, 168, 132, 0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 24 * scale,
-      borderWidth: 2,
-      borderColor: '#00a884'
-    },
-    title: { color: '#ffffff', fontSize: 28 * scale, fontWeight: 'bold', textAlign: 'center' },
-    subtitle: { color: '#8ba4c9', fontSize: 16 * scale, marginTop: 8 * scale, textAlign: 'center' },
+    iconContainer: { alignItems: 'center', marginBottom: 20 * scale },
+    checkCircle: { width: 80 * scale, height: 80 * scale, borderRadius: 40 * scale, backgroundColor: COLORS.palatinateBlue, justifyContent: 'center', alignItems: 'center', shadowColor: COLORS.palatinateBlue, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 },
 
-    ticketCard: {
-      backgroundColor: '#ffffff',
-      borderRadius: 24,
-      padding: 24 * scale,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.15,
-      shadowRadius: 20,
-      elevation: 10,
-      marginBottom: 24 * scale,
-    },
-    ticketHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    folioLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 4 },
-    folioValue: { color: '#00a884', fontSize: 22 * scale, fontWeight: '900', letterSpacing: 1 },
-    statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e6f7f4', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-    statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00a884', marginRight: 6 },
-    statusText: { color: '#00a884', fontSize: 13 * scale, fontWeight: 'bold' },
-    
-    divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 20 * scale, borderStyle: 'dashed', borderWidth: 1, borderColor: '#e5e7eb' },
-    
-    ticketBody: { gap: 16 * scale },
-    infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    infoLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, flex: 0.4 },
-    infoValue: { color: '#1e3a68', fontSize: 15 * scale, fontWeight: '700', flex: 0.6, textAlign: 'right' },
-    infoValueHighlighted: { color: '#1a355b', backgroundColor: '#f0f4f8', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, overflow: 'hidden' },
+    title: { color: COLORS.palatinateBlue, fontSize: 26 * scale, fontWeight: '900', textAlign: 'center', marginBottom: 10 * scale },
+    subtitle: { color: '#4b5563', fontSize: 15 * scale, textAlign: 'center', lineHeight: 22 * scale, paddingHorizontal: 20 * scale, marginBottom: 40 * scale },
 
-    warningCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(217, 119, 6, 0.1)',
-      borderColor: '#d97706',
-      borderWidth: 1,
-      padding: 18 * scale,
-      borderRadius: 16,
-      marginBottom: 32 * scale,
-    },
-    warningText: { color: '#fcd34d', fontSize: 15 * scale, flex: 1, marginLeft: 16 * scale, lineHeight: 22 * scale },
+    ticketCard: { backgroundColor: '#ffffff', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 5, marginBottom: 30 * scale, overflow: 'hidden' },
+    ticketHeader: { backgroundColor: COLORS.palatinateBlue, flexDirection: 'row', justifyContent: 'space-between', padding: 24 * scale },
+    ticketHeaderCol: { flex: 1 },
+    ticketLabelLight: { color: COLORS.periwinkle, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 * scale },
+    ticketValueBig: { color: COLORS.white, fontSize: 22 * scale, fontWeight: 'bold' },
 
-    finishButton: { backgroundColor: '#00a884', padding: 20 * scale, borderRadius: 16, alignItems: 'center' },
-    finishButtonText: { color: '#ffffff', fontSize: 18 * scale, fontWeight: 'bold' },
+    ticketBody: { padding: 24 * scale },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    rowLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, flex: 0.35 },
+    rowValue: { color: '#111827', fontSize: 14 * scale, fontWeight: '600', flex: 0.65, textAlign: 'right' },
+    rowValueBlue: { color: COLORS.royalBlue, fontWeight: 'bold' },
+    divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 16 * scale },
+
+    homeButton: { backgroundColor: COLORS.palatinateBlue, flexDirection: 'row', padding: 20 * scale, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    homeButtonText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
   });

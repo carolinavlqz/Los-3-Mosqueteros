@@ -11,7 +11,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Configuración de subida de archivos ---
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -24,24 +23,35 @@ const storage = multer.diskStorage({
     cb(null, `${unique}${path.extname(file.originalname)}`);
   },
 });
-const upload = multer({ storage });
-
-// Para poder ver las fotos después desde una URL, ej: http://TU_IP:3000/uploads/archivo.jpg
+const upload = multer({
+  storage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Solo se permiten imágenes'));
+    }
+    cb(null, true);
+  },
+});
 app.use('/uploads', express.static(uploadDir));
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-db.connect((err) => {
+db.getConnection((err, connection) => {
   if (err) {
     console.error('Error conectando a MySQL:', err.message);
     return;
   }
   console.log('Conectado exitosamente a la base de datos MySQL');
+  connection.release();
 });
 
 app.get('/', (req, res) => {
@@ -53,8 +63,6 @@ app.post('/api/proveedores', upload.fields([
   { name: 'foto_persona', maxCount: 1 },
   { name: 'foto_ine', maxCount: 1 },
 ]), (req, res) => {
-  console.log('BODY:', req.body);
-  console.log('FILES:', req.files);
   const { pisoSeleccionado, areaSeleccionada, empresa, representante, motivo, contacto } = req.body;
 
   const fotoPersonaPath = req.files?.foto_persona?.[0]
@@ -98,54 +106,73 @@ app.post('/api/proveedores', upload.fields([
   });
 });
 
-// --- RUTA PARA FAMILIARES ---
-app.post('/api/familiares', (req, res) => {
-  const { nombre, parentesco, habitacion, nombrePaciente, foto_persona, foto_ine } = req.body;
-  
-  // 1. Insertar en visita
-  const queryVisita = "INSERT INTO visita (id_edificio, tipo_visitante, estado) VALUES (1, 'familiar', 'activa')";
+// --- RUTA PARA FAMILIARES (ahora con subida real de archivos vía multipart/form-data) ---
+app.post('/api/familiares', upload.fields([
+  { name: 'foto_persona', maxCount: 1 },
+  { name: 'foto_ine', maxCount: 1 },
+]), (req, res) => {
+  const { nombre, parentesco, habitacion, nombrePaciente } = req.body;
+
+  const fotoPersonaPath = req.files?.foto_persona?.[0]
+    ? `/uploads/${req.files.foto_persona[0].filename}`
+    : null;
+  const fotoInePath = req.files?.foto_ine?.[0]
+    ? `/uploads/${req.files.foto_ine[0].filename}`
+    : null;
+
+    const queryVisita = "INSERT INTO visita (id_edificio, tipo_visitante, estado) VALUES (1, 'familiar', 'activa')";
   db.query(queryVisita, (err, result) => {
-    if (err) return res.status(500).json({ mensaje: 'Error al registrar visita' });
+    if (err) return res.status(500).json({ success: false, mensaje: 'Error al registrar visita' });
 
     const idVisitaGenerada = result.insertId;
     const folio = `MIA-${idVisitaGenerada.toString().padStart(4, '0')}`;
 
-    // 2. Insertar en visita_familiar (Asegúrate de tener las columnas foto_persona e ine en MySQL)
+    // 2. Insertar en visita_familiar
     const queryFamiliar = `
       INSERT INTO visita_familiar 
       (id_visita, nombre, parentesco, habitacion, nombre_paciente, folio, foto_persona, foto_ine) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(queryFamiliar, [idVisitaGenerada, nombre, parentesco, habitacion, nombrePaciente, folio, foto_persona, foto_ine], (err2) => {
+    db.query(queryFamiliar, [
+        idVisitaGenerada,
+        nombre,
+        parentesco,
+        habitacion,
+        nombrePaciente,
+        folio,
+        fotoPersonaPath,
+        fotoInePath
+    ], (err2) => {
       if (err2) {
-        console.error(err2);
-        return res.status(500).json({ mensaje: 'Error al guardar detalles' });
+        console.error("Error en INSERT de familiar:", err2);
+        return res.status(500).json({ success: false, mensaje: 'Error al guardar detalles' });
       }
       res.status(200).json({ success: true, folio: folio });
     });
   });
 });
 
-app.post('/api/postulantes', (req, res) => {
-  const { nombre, puesto, area, responsable, tipoCita, cvEntregado, foto_persona, foto_ine } = req.body;
-  const queryVisita = "INSERT INTO visita (id_edificio, tipo_visitante, estado) VALUES (1, 'postulante', 'activa')";
+// --- RUTA PARA POSTULANTES (ahora con subida real de archivos vía multipart/form-data) ---
+app.post('/api/postulantes', upload.fields([
+  { name: 'foto_persona', maxCount: 1 }, 
+  { name: 'foto_ine', maxCount: 1 }
+]), (req, res) => {
+  const { nombre, puesto, area, responsable, tipoCita, cvEntregado } = req.body;
+  const fotoPersonaPath = req.files?.foto_persona?.[0] ? `/uploads/${req.files.foto_persona[0].filename}` : null;
+  const fotoInePath = req.files?.foto_ine?.[0] ? `/uploads/${req.files.foto_ine[0].filename}` : null;
 
+  const queryVisita = "INSERT INTO visita (id_edificio, tipo_visitante, estado) VALUES (1, 'postulante', 'activa')";
   db.query(queryVisita, (err, result) => {
     if (err) return res.status(500).json({ success: false, mensaje: 'Error al registrar visita' });
 
     const idVisitaGenerada = result.insertId;
-    const queryPostulante = `
-      INSERT INTO visita_postulante 
-      (id_visita, nombre, puesto, area_destino, responsable_rh, tipo_cita, cv_entregado, foto_persona, foto_ine) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    const folio = `MIA-${idVisitaGenerada.toString().padStart(4, '0')}`;
+    const queryPostulante = `INSERT INTO visita_postulante (id_visita, nombre, puesto, area_destino, responsable_rh, tipo_cita, cv_entregado, foto_persona, foto_ine, folio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const valores = [idVisitaGenerada, nombre, puesto, area, responsable, tipoCita, cvEntregado ? 1 : 0, foto_persona, foto_ine];
-
-    db.query(queryPostulante, valores, (err2) => {
+    db.query(queryPostulante, [idVisitaGenerada, nombre, puesto, area, responsable, tipoCita, (cvEntregado === 'true' ? 1 : 0), fotoPersonaPath, fotoInePath, folio], (err2) => {
       if (err2) return res.status(500).json({ success: false, mensaje: 'Error al guardar detalles' });
-      res.status(200).json({ success: true, mensaje: 'Registro guardado' });
+      res.status(200).json({ success: true, folio: folio });
     });
   });
 });
@@ -161,7 +188,9 @@ app.get('/api/visitas/activas', (req, res) => {
         CONCAT(vp.piso_destino, ' — ', vp.area_destino),
         CONCAT('Habitación: ', vf.habitacion),
         CONCAT(vpost.area_destino, ' — ', vpost.puesto)
-      ) as destino
+      ) as destino,
+      COALESCE(vp.foto_persona, vf.foto_persona, vpost.foto_persona) as foto_persona,
+      COALESCE(vp.foto_ine, vf.foto_ine, vpost.foto_ine) as foto_ine
     FROM visita v
     LEFT JOIN visita_proveedor vp ON v.id_visita = vp.id_visita
     LEFT JOIN visita_familiar vf ON v.id_visita = vf.id_visita
@@ -208,7 +237,9 @@ app.get('/api/visitas/historial', (req, res) => {
         CONCAT(vp.piso_destino, ' — ', vp.area_destino),
         CONCAT('Habitación: ', vf.habitacion),
         CONCAT(vpost.area_destino, ' — ', vpost.puesto)
-      ) as destino 
+      ) as destino,
+      COALESCE(vp.foto_persona, vf.foto_persona, vpost.foto_persona) as foto_persona,
+      COALESCE(vp.foto_ine, vf.foto_ine, vpost.foto_ine) as foto_ine
     FROM visita v
     LEFT JOIN visita_proveedor vp ON v.id_visita = vp.id_visita
     LEFT JOIN visita_familiar vf ON v.id_visita = vf.id_visita
@@ -234,7 +265,6 @@ app.get('/api/visitas/historial', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-// Manejador de errores global (debe ir después de todas las rutas)
 app.use((err, req, res, next) => {
   console.error('ERROR CAPTURADO:', err);
   res.status(500).json({

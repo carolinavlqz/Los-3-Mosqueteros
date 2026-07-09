@@ -7,34 +7,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  useWindowDimensions,
   Platform,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const BASE_WIDTH = 375;
-const TABLET_BREAKPOINT = 600;
-const MAX_CONTENT_WIDTH_PHONE = 480;
-const MAX_CONTENT_WIDTH_TABLET = 760;
-
-function useScale() {
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
-  const isTablet = width >= TABLET_BREAKPOINT;
-
-  const contentWidth = isTablet
-    ? Math.min(width * 0.9, MAX_CONTENT_WIDTH_TABLET)
-    : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
-
-  const rawScale = contentWidth / BASE_WIDTH;
-  const scale = Math.max(0.85, Math.min(rawScale, 1.3));
-
-  // Las dos cajas van en fila si hay espacio suficiente: tablet o celular landscape
-  const useRowLayout = isTablet || isLandscape;
-
-  return { isLandscape, isTablet, contentWidth, scale, useRowLayout };
-}
+import { COLORS } from '../theme/colors';
+import { useScale } from '../hooks/useScale';
 
 export default function TipoVisitaScreen() {
   const router = useRouter();
@@ -55,7 +33,7 @@ export default function TipoVisitaScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a355b" />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={s.outerContainer}>
@@ -91,14 +69,14 @@ export default function TipoVisitaScreen() {
                   activeOpacity={0.9}
                   onPress={() => router.push('/familiar-form')} 
                 >
-                  <View style={[s.cardHeaderBg, { backgroundColor: '#f0f4f8' }]}>
+                  <View style={[s.cardHeaderBg, { backgroundColor: COLORS.royalBlueSoft }]}>
                     <View style={s.cardHeaderContent}>
-                      <View style={[s.iconBox, { backgroundColor: '#1e3a68' }]}>
-                        <Ionicons name="heart-outline" size={32 * scale} color="#ffffff" />
+                      <View style={[s.iconBox, { backgroundColor: COLORS.palatinateBlue }]}>
+                        <Ionicons name="heart-outline" size={32 * scale} color={COLORS.white} />
                       </View>
                       <View style={s.cardTitleContainer}>
-                        <Text style={[s.cardTitle, { color: '#1e3a68' }]}>Familiar</Text>
-                        <Text style={[s.cardSubtitle, { color: '#4b6b9e' }]}>Visita a paciente hospitalizado</Text>
+                        <Text style={[s.cardTitle, { color: COLORS.palatinateBlue }]}>Familiar</Text>
+                        <Text style={[s.cardSubtitle, { color: COLORS.royalBlue }]}>Visita a paciente hospitalizado</Text>
                       </View>
                     </View>
                   </View>
@@ -122,14 +100,14 @@ export default function TipoVisitaScreen() {
                   activeOpacity={0.9}
                   onPress={() => router.push('/postulante-form')}
                 >
-                  <View style={[s.cardHeaderBg, { backgroundColor: '#fef3c7' }]}>
+                  <View style={[s.cardHeaderBg, { backgroundColor: COLORS.brandRedSoft }]}>
                     <View style={s.cardHeaderContent}>
-                      <View style={[s.iconBox, { backgroundColor: '#d97706' }]}>
-                        <Ionicons name="briefcase-outline" size={32 * scale} color="#ffffff" />
+                      <View style={[s.iconBox, { backgroundColor: COLORS.brandRed }]}>
+                        <Ionicons name="briefcase-outline" size={32 * scale} color={COLORS.white} />
                       </View>
                       <View style={s.cardTitleContainer}>
-                        <Text style={[s.cardTitle, { color: '#92400e' }]}>Postulante</Text>
-                        <Text style={[s.cardSubtitle, { color: '#b45309' }]}>Candidato de Recursos Humanos</Text>
+                        <Text style={[s.cardTitle, { color: COLORS.brandRed }]}>Postulante</Text>
+                        <Text style={[s.cardSubtitle, { color: COLORS.palatinateBlue }]}>Candidato de Recursos Humanos</Text>
                       </View>
                     </View>
                   </View>
@@ -163,7 +141,7 @@ const createStyles = (scale) =>
     container: { flex: 1 },
 
     header: {
-      backgroundColor: '#1a355b',
+      backgroundColor: COLORS.palatinateBlue,
       paddingHorizontal: 28 * scale,
       paddingTop: Platform.OS === 'android' ? 40 : 20,
       paddingBottom: 28 * scale,
@@ -182,8 +160,8 @@ const createStyles = (scale) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    headerSubtitle: { color: '#8ba4c9', fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
-    headerTitle: { color: '#ffffff', fontSize: 26 * scale, fontWeight: 'bold' },
+    headerSubtitle: { color: COLORS.periwinkle, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
+    headerTitle: { color: COLORS.white, fontSize: 26 * scale, fontWeight: 'bold' },
 
     bottomSection: { flex: 1, paddingHorizontal: 24 * scale, paddingTop: 24 * scale, paddingBottom: 32 * scale },
     instructionText: { color: '#4b5563', fontSize: 16 * scale, marginBottom: 24 * scale },
@@ -224,9 +202,9 @@ const createStyles = (scale) =>
     tag: { paddingHorizontal: 12 * scale, paddingVertical: 6 * scale, borderRadius: 20 },
     
     // Temas para las píldoras
-    tagFamiliarBg: { backgroundColor: '#e0e7ff' }, // Azul muy claro
-    tagFamiliarText: { color: '#3730a3', fontSize: 12 * scale, fontWeight: 'bold' },
-    
-    tagPostulanteBg: { backgroundColor: '#fef3c7' }, // Naranja/Amarillo muy claro
-    tagPostulanteText: { color: '#92400e', fontSize: 12 * scale, fontWeight: 'bold' },
+    tagFamiliarBg: { backgroundColor: COLORS.periwinkleSoft },
+    tagFamiliarText: { color: COLORS.palatinateBlue, fontSize: 12 * scale, fontWeight: 'bold' },
+
+    tagPostulanteBg: { backgroundColor: COLORS.brandRedSoft },
+    tagPostulanteText: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: 'bold' },
   });

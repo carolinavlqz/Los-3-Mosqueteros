@@ -6,27 +6,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  useWindowDimensions,
   Platform,
   StatusBar,
-  ImageBackground,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const BASE_WIDTH = 375;
-const MAX_CONTENT_WIDTH = 480; 
-function useScale() {
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
-  const contentWidth = Math.min(width, MAX_CONTENT_WIDTH);
-  const rawScale = contentWidth / BASE_WIDTH;
-  const scale = Math.max(0.85, Math.min(rawScale, 1.25));
-  return { width, height, isLandscape, contentWidth, scale };
-}
+import { COLORS } from '../theme/colors';
+import { useScale } from '../hooks/useScale';
 
 export default function HomeScreen() {
-  const { isLandscape, contentWidth, scale } = useScale();
+  const { isLandscape, contentWidth, scale } = useScale({ maxContentWidthTablet: 560 });
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const router = useRouter();
@@ -65,35 +54,26 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a355b" />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
       <View style={s.outerContainer}>
         <View style={[s.container, { width: contentWidth }]}>
 
-          {/* ===== HEADER CON FOTO DE FONDO ===== */}
-          <ImageBackground
-            source={require('../../assets/images/medica-mia.png')}
-            resizeMode="cover"
-            imageStyle={[s.bgImage, { objectPosition: 'top' }]}
+          {/* ===== HEADER CON GRADIENTE DE MARCA (sin imagen) ===== */}
+          <LinearGradient
+            colors={[COLORS.palatinateBlue, '#0A2A6B', COLORS.royalBlue]}
+            locations={[0, 0.55, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={[s.topSection, isLandscape && s.topSectionLandscape]}
           >
-            <LinearGradient
-              colors={[
-                'rgba(10,22,43,0.35)',
-                'rgba(15,30,55,0.55)',
-                'rgba(26,53,91,0.90)',
-              ]}
-              locations={[0, 0.45, 1]}
-              style={s.overlay}
-            />
-
             {/* Detalles decorativos tipo "glow" para que se vea premium */}
             <View style={s.glowCircleTop} pointerEvents="none" />
             <View style={s.glowCircleBottom} pointerEvents="none" />
 
             <View style={s.headerContainer}>
               <View style={s.homeIconContainer}>
-                <Ionicons name="home-outline" size={26 * scale} color="#ffffff" />
+                <Ionicons name="home-outline" size={26 * scale} color={COLORS.white} />
               </View>
               <View>
                 <Text style={s.headerSubtitle}>CONTROL DE ACCESO</Text>
@@ -114,7 +94,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             </View>
-          </ImageBackground>
+          </LinearGradient>
           {/* ===== FIN HEADER ===== */}
 
           <View style={[s.bottomSection, isLandscape && s.bottomSectionLandscape]}>
@@ -122,51 +102,58 @@ export default function HomeScreen() {
 
             <View style={s.buttonsContainer}>
 
-              {/* BOTÓN CON NAVEGACIÓN HACIA CHECK IN */}
+              {/* CHECK IN -> Royal Blue (color de acción principal) */}
               <TouchableOpacity
-                style={[s.actionButton, { backgroundColor: '#1e3a68' }]}
+                style={[s.actionButton, { backgroundColor: COLORS.royalBlue }]}
                 activeOpacity={0.85}
                 onPress={() => router.push('/check-in')}
               >
-                <View style={[s.iconBox, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                  <MaterialCommunityIcons name="login" size={30 * scale} color="#ffffff" />
+                <View style={[s.iconBox, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                  <MaterialCommunityIcons name="login" size={30 * scale} color={COLORS.white} />
                 </View>
                 <View style={s.buttonTextContainer}>
                   <Text style={s.buttonTitle}>Check In</Text>
                   <Text style={s.buttonSubtitle}>Registrar entrada de visitante</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={22 * scale} color="#ffffff" />
+                <Ionicons name="chevron-forward" size={22 * scale} color={COLORS.white} />
               </TouchableOpacity>
 
+              {/* CHECK OUT -> Rojo de marca (acento, distingue claramente la acción de salida) */}
               <TouchableOpacity
-                style={[s.actionButton, { backgroundColor: '#00a884' }]}
+                style={[s.actionButton, { backgroundColor: COLORS.brandRed }]}
                 activeOpacity={0.85}
                 onPress={() => router.push('/check-out')}
               >
-                <View style={[s.iconBox, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  <MaterialCommunityIcons name="logout" size={30 * scale} color="#ffffff" />
+                <View style={[s.iconBox, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                  <MaterialCommunityIcons name="logout" size={30 * scale} color={COLORS.white} />
                 </View>
                 <View style={s.buttonTextContainer}>
                   <Text style={s.buttonTitle}>Check Out</Text>
                   <Text style={s.buttonSubtitle}>Registrar salida de visitante</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={22 * scale} color="#ffffff" />
+                <Ionicons name="chevron-forward" size={22 * scale} color={COLORS.white} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={[s.actionButton, s.historyButton]} activeOpacity={0.85} onPress={() => router.push('/historial')}>
-                <View style={[s.iconBox, { backgroundColor: '#f0f4f8' }]}>
-                  <Ionicons name="document-text-outline" size={30 * scale} color="#1e3a68" />
+              {/* HISTORIAL -> tarjeta blanca, texto en Palatinate Blue e icono en gris de marca */}
+              <TouchableOpacity
+                style={[s.actionButton, s.historyButton]}
+                activeOpacity={0.85}
+                onPress={() => router.push('/historial')}
+              >
+                <View style={[s.iconBox, { backgroundColor: '#EEF1F8' }]}>
+                  <Ionicons name="document-text-outline" size={30 * scale} color={COLORS.palatinateBlue} />
                 </View>
                 <View style={s.buttonTextContainer}>
-                  <Text style={[s.buttonTitle, { color: '#1e3a68' }]}>Historial</Text>
-                  <Text style={[s.buttonSubtitle, { color: '#6b7280' }]}>
+                  <Text style={[s.buttonTitle, { color: COLORS.palatinateBlue }]}>Historial</Text>
+                  <Text style={[s.buttonSubtitle, { color: COLORS.silver }]}>
                     Ver registros anteriores
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={22 * scale} color="#6b7280" />
+                <Ionicons name="chevron-forward" size={22 * scale} color={COLORS.silver} />
               </TouchableOpacity>
             </View>
 
+            <Text style={s.footerText}>MÉDICA MIA · HOSPITAL</Text>
           </View>
         </View>
       </View>
@@ -176,7 +163,7 @@ export default function HomeScreen() {
 
 const createStyles = (scale) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#f4f6f9' },
+    safeArea: { flex: 1, backgroundColor: '#F4F6FA' },
     outerContainer: { flex: 1, alignItems: 'center' },
     container: { flex: 1 },
 
@@ -190,17 +177,6 @@ const createStyles = (scale) =>
     },
     topSectionLandscape: { paddingHorizontal: 48 * scale },
 
-    bgImage: {
-      borderBottomLeftRadius: 28,
-      borderBottomRightRadius: 28,
-    },
-
-    overlay: {
-      ...StyleSheet.absoluteFillObject,
-      borderBottomLeftRadius: 28,
-      borderBottomRightRadius: 28,
-    },
-
     glowCircleTop: {
       position: 'absolute',
       top: -40,
@@ -208,7 +184,7 @@ const createStyles = (scale) =>
       width: 140,
       height: 140,
       borderRadius: 70,
-      backgroundColor: 'rgba(0,168,132,0.18)', 
+      backgroundColor: 'rgba(219,24,48,0.16)', // toque del rojo de marca
     },
     glowCircleBottom: {
       position: 'absolute',
@@ -217,7 +193,7 @@ const createStyles = (scale) =>
       width: 160,
       height: 160,
       borderRadius: 80,
-      backgroundColor: 'rgba(255,255,255,0.06)',
+      backgroundColor: 'rgba(184,199,238,0.10)', // Light Periwinkle muy sutil
     },
 
     headerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 28 * scale },
@@ -230,10 +206,10 @@ const createStyles = (scale) =>
       justifyContent: 'center',
       marginRight: 16 * scale,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.35)', 
+      borderColor: 'rgba(255,255,255,0.35)',
     },
     headerSubtitle: {
-      color: '#cddcf0',
+      color: '#B8C7EE', // Light Periwinkle
       fontSize: 12 * scale,
       fontWeight: '600',
       letterSpacing: 1.5,
@@ -243,7 +219,7 @@ const createStyles = (scale) =>
       textShadowRadius: 3,
     },
     headerTitle: {
-      color: '#ffffff',
+      color: '#FFFFFF',
       fontSize: 22 * scale,
       fontWeight: 'bold',
       textShadowColor: 'rgba(0,0,0,0.35)',
@@ -252,28 +228,28 @@ const createStyles = (scale) =>
     },
 
     dateTimeCard: {
-      backgroundColor: 'rgba(43, 71, 112, 0.85)', 
+      backgroundColor: 'rgba(3, 30, 93, 0.75)', // Palatinate Blue con transparencia
       borderRadius: 16,
       padding: 20 * scale,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: 'rgba(184,199,238,0.20)',
     },
     dateContainer: { flex: 1, paddingRight: 12 },
     timeContainer: { alignItems: 'flex-end' },
     dateTimeLabel: {
-      color: '#8ba4c9',
+      color: '#8FA0C7', // variante intermedia entre periwinkle y silver
       fontSize: 11 * scale,
       fontWeight: '600',
       letterSpacing: 1,
       marginBottom: 8,
     },
-    dateText: { color: '#ffffff', fontSize: 16 * scale, fontWeight: '500' },
+    dateText: { color: '#FFFFFF', fontSize: 16 * scale, fontWeight: '500' },
     timeRow: { flexDirection: 'row', alignItems: 'baseline' },
-    timeText: { color: '#ffffff', fontSize: 30 * scale, fontWeight: 'bold', marginRight: 6 },
-    periodText: { color: '#ffffff', fontSize: 18 * scale, fontWeight: '600' },
+    timeText: { color: '#FFFFFF', fontSize: 30 * scale, fontWeight: 'bold', marginRight: 6 },
+    periodText: { color: '#FFFFFF', fontSize: 18 * scale, fontWeight: '600' },
 
     bottomSection: {
       flex: 1,
@@ -285,7 +261,7 @@ const createStyles = (scale) =>
     bottomSectionLandscape: { paddingHorizontal: 48 * scale },
 
     sectionLabel: {
-      color: '#6b7280',
+      color: '#AFA9A9', // Philippine Silver
       fontSize: 12 * scale,
       fontWeight: 'bold',
       letterSpacing: 1.5,
@@ -299,9 +275,14 @@ const createStyles = (scale) =>
       alignItems: 'center',
       padding: 18 * scale,
       borderRadius: 18,
+      shadowColor: '#031E5D',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 10,
+      elevation: 3,
     },
     historyButton: {
-      backgroundColor: '#ffffff',
+      backgroundColor: '#FFFFFF',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.06,
@@ -318,12 +299,12 @@ const createStyles = (scale) =>
       marginRight: 16 * scale,
     },
     buttonTextContainer: { flex: 1 },
-    buttonTitle: { color: '#ffffff', fontSize: 19 * scale, fontWeight: 'bold', marginBottom: 3 },
-    buttonSubtitle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 13 * scale },
+    buttonTitle: { color: '#FFFFFF', fontSize: 19 * scale, fontWeight: 'bold', marginBottom: 3 },
+    buttonSubtitle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 13 * scale },
 
     footerText: {
       textAlign: 'center',
-      color: '#9ca3af',
+      color: '#AFA9A9', // Philippine Silver
       fontSize: 12 * scale,
       fontWeight: '500',
       letterSpacing: 1,

@@ -295,9 +295,9 @@ export default function FamiliarFormScreen() {
                 {photoError ? <Text style={s.errorText}>{photoError}</Text> : null}
 
                 {/* Formulario Visitante */}
-                {renderInput('nombre', 'NOMBRE COMPLETO DEL VISITANTE *', 'Nombre y apellidos', nombre, setNombre, true)}
-                {renderInput('parentesco', 'PARENTESCO *', 'Ej. Esposo, Madre, Hijo...', parentesco, setParentesco)}
-
+{renderInput('nombre', 'NOMBRE COMPLETO DEL VISITANTE *', 'Nombre y apellidos', nombre, setNombre, true)}
+{/* CAMBIO: Se añade ", true" al final para validar solo letras y mostrar la ayuda visual */}
+{renderInput('parentesco', 'PARENTESCO *', 'Ej. Esposo, Madre, Hijo...', parentesco, setParentesco, true)}
                 {/* Separador visual de Paciente */}
                 <View style={s.pacienteCard}>
                   <Text style={s.pacienteTitle}>DATOS DEL PACIENTE</Text>

@@ -36,7 +36,7 @@ export default function ExitoScreen() {
     setFecha(now.toLocaleDateString('es-MX', options));
   }, []);
 
-  const handleFinish = () => router.replace('/');
+  const handleFinish = () => router.replace('/hospital');
 
   const renderRow = (label, value, isHighlighted = false) => (
     <View style={s.row}>

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -29,24 +30,35 @@ export default function CheckOutScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchVisitors = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/visitas/activas`);
-        const data = await res.json();
-        if (res.ok) {
-          setVisitors(data);
-        } else {
-          Alert.alert('Error', 'No se pudieron cargar las visitas activas.');
-        }
-      } catch (error) {
-        Alert.alert('Error de red', 'No se pudo contactar con el servidor.');
-      } finally {
-        setLoading(false);
+  const cargarActivos = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/visitas/activas`);
+      const data = await res.json();
+      if (res.ok) {
+        setVisitors(data);
+      } else if (!silent) {
+        Alert.alert('Error', 'No se pudieron cargar las visitas activas.');
       }
-    };
-    fetchVisitors();
+    } catch (error) {
+      if (!silent) Alert.alert('Error de red', 'No se pudo contactar con el servidor.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    cargarActivos();
+  }, [cargarActivos]);
+
+  // Refresca en segundo plano cada 5s mientras la pantalla está en foco.
+  useFocusEffect(
+    useCallback(() => {
+      const interval = setInterval(() => cargarActivos({ silent: true }), 5000);
+      return () => clearInterval(interval);
+    }, [cargarActivos])
+  );
 
   const filteredVisitors = useMemo(() => {
     return visitors.filter(v => {
@@ -112,7 +124,7 @@ export default function CheckOutScreen() {
             <TouchableOpacity onPress={() => router.back()} style={s.iconButton}>
               <Ionicons name="chevron-back" size={22 * scale} color={COLORS.white} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton}>
+            <TouchableOpacity onPress={() => router.push('/hospital')} style={s.iconButton}>
               <Ionicons name="home-outline" size={20 * scale} color={COLORS.white} />
             </TouchableOpacity>
           </View>

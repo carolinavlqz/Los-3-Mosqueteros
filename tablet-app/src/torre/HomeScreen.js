@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,7 +16,9 @@ import { COLORS } from '../theme/colors';
 import { useScale } from '../hooks/useScale';
 import { clearSession } from '../utils/session';
 
-export default function HomeScreen() {
+const PRIVACY_URL = 'https://medicamia.com.mx/aviso-de-privacidad-2/';
+
+export default function TorreHomeScreen() {
   const { isLandscape, contentWidth, scale } = useScale({ maxContentWidthTablet: 560 });
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -80,11 +83,11 @@ export default function HomeScreen() {
             <View style={s.headerContainer}>
               <View style={s.headerLeft}>
                 <View style={s.homeIconContainer}>
-                  <Ionicons name="home-outline" size={26 * scale} color={COLORS.white} />
+                  <Ionicons name="business-outline" size={26 * scale} color={COLORS.white} />
                 </View>
                 <View>
                   <Text style={s.headerSubtitle}>CONTROL DE ACCESO</Text>
-                  <Text style={s.headerTitle}>Hospital General</Text>
+                  <Text style={s.headerTitle}>Torre Mia</Text>
                 </View>
               </View>
 
@@ -114,33 +117,33 @@ export default function HomeScreen() {
 
             <View style={s.buttonsContainer}>
 
-              {/* CHECK IN -> Royal Blue (color de acción principal) */}
+              {/* ENTRADA -> Royal Blue (color de acción principal) */}
               <TouchableOpacity
                 style={[s.actionButton, { backgroundColor: COLORS.royalBlue }]}
                 activeOpacity={0.85}
-                onPress={() => router.push('/check-in')}
+                onPress={() => router.push('/torre/entrada')}
               >
                 <View style={[s.iconBox, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
                   <MaterialCommunityIcons name="login" size={30 * scale} color={COLORS.white} />
                 </View>
                 <View style={s.buttonTextContainer}>
-                  <Text style={s.buttonTitle}>Check In</Text>
+                  <Text style={s.buttonTitle}>Entrada</Text>
                   <Text style={s.buttonSubtitle}>Registrar entrada de visitante</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={22 * scale} color={COLORS.white} />
               </TouchableOpacity>
 
-              {/* CHECK OUT -> Rojo de marca (acento, distingue claramente la acción de salida) */}
+              {/* SALIDA -> Rojo de marca (acento, distingue claramente la acción de salida) */}
               <TouchableOpacity
                 style={[s.actionButton, { backgroundColor: COLORS.brandRed }]}
                 activeOpacity={0.85}
-                onPress={() => router.push('/check-out')}
+                onPress={() => router.push('/torre/salida')}
               >
                 <View style={[s.iconBox, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
                   <MaterialCommunityIcons name="logout" size={30 * scale} color={COLORS.white} />
                 </View>
                 <View style={s.buttonTextContainer}>
-                  <Text style={s.buttonTitle}>Check Out</Text>
+                  <Text style={s.buttonTitle}>Salida</Text>
                   <Text style={s.buttonSubtitle}>Registrar salida de visitante</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={22 * scale} color={COLORS.white} />
@@ -150,7 +153,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[s.actionButton, s.historyButton]}
                 activeOpacity={0.85}
-                onPress={() => router.push('/historial')}
+                onPress={() => router.push('/torre/historial')}
               >
                 <View style={[s.iconBox, { backgroundColor: '#EEF1F8' }]}>
                   <Ionicons name="document-text-outline" size={30 * scale} color={COLORS.palatinateBlue} />
@@ -158,14 +161,21 @@ export default function HomeScreen() {
                 <View style={s.buttonTextContainer}>
                   <Text style={[s.buttonTitle, { color: COLORS.palatinateBlue }]}>Historial</Text>
                   <Text style={[s.buttonSubtitle, { color: COLORS.silver }]}>
-                    Ver registros anteriores
+                    Ver activos y finalizados
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={22 * scale} color={COLORS.silver} />
               </TouchableOpacity>
             </View>
 
-            <Text style={s.footerText}>MÉDICA MIA · HOSPITAL</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)} activeOpacity={0.7}>
+              <Text style={s.privacyText}>
+                Consulta el aviso de privacidad en:{'\n'}
+                <Text style={s.privacyLink}>{PRIVACY_URL}</Text>
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={s.footerText}>TORRE MIA 57</Text>
           </View>
         </View>
       </View>
@@ -315,7 +325,7 @@ const createStyles = (scale) =>
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.06,
       shadowRadius: 8,
-      elevation: 2,
+      elevation: 3,
     },
 
     iconBox: {
@@ -330,12 +340,23 @@ const createStyles = (scale) =>
     buttonTitle: { color: '#FFFFFF', fontSize: 19 * scale, fontWeight: 'bold', marginBottom: 3 },
     buttonSubtitle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 13 * scale },
 
+    privacyText: {
+      textAlign: 'center',
+      color: '#AFA9A9', // Philippine Silver
+      fontSize: 12 * scale,
+      lineHeight: 18 * scale,
+      marginTop: 16 * scale,
+    },
+    privacyLink: {
+      color: COLORS.royalBlue,
+      textDecorationLine: 'underline',
+    },
     footerText: {
       textAlign: 'center',
       color: '#AFA9A9', // Philippine Silver
       fontSize: 12 * scale,
       fontWeight: '500',
       letterSpacing: 1,
-      marginTop: 16 * scale,
+      marginTop: 12 * scale,
     },
   });

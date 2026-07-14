@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -30,20 +31,31 @@ export default function HistorialScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('Todos');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/visitas/historial`);
-        const data = await res.json();
-        setHistory(data);
-      } catch (error) {
-        console.error("Error al cargar historial:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const cargarHistorial = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/visitas/historial`);
+      const data = await res.json();
+      setHistory(data);
+    } catch (error) {
+      console.error("Error al cargar historial:", error);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    cargarHistorial();
+  }, [cargarHistorial]);
+
+  // Refresca en segundo plano cada 5s mientras la pantalla está en foco.
+  useFocusEffect(
+    useCallback(() => {
+      const interval = setInterval(() => cargarHistorial({ silent: true }), 5000);
+      return () => clearInterval(interval);
+    }, [cargarHistorial])
+  );
 
   const filters = ['Todos', 'Proveedor', 'Familiar', 'Postulante'];
 
@@ -103,7 +115,7 @@ export default function HistorialScreen() {
             <TouchableOpacity onPress={() => router.back()} style={s.iconButton}>
               <Ionicons name="chevron-back" size={22 * scale} color={COLORS.white} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton}>
+            <TouchableOpacity onPress={() => router.push('/hospital')} style={s.iconButton}>
               <Ionicons name="home-outline" size={20 * scale} color={COLORS.white} />
             </TouchableOpacity>
           </View>

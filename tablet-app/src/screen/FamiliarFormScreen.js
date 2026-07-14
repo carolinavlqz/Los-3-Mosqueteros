@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter, useLocalSearchParams} from 'expo-router';
 import {
   View,
@@ -13,6 +13,7 @@ import {
   ScrollView,
   TextInput,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -34,17 +35,49 @@ export default function FamiliarFormScreen() {
 
   const [nombre, setNombre] = useState('');
   const [parentesco, setParentesco] = useState('');
+  const [piso, setPiso] = useState('');
   const [habitacion, setHabitacion] = useState('');
   const [nombrePaciente, setNombrePaciente] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
   const [errors, setErrors] = useState({});
   const [photoError, setPhotoError] = useState(null);
 
+  const [pisos, setPisos] = useState([]);
+  const [isLoadingPisos, setIsLoadingPisos] = useState(true);
+  const [habitaciones, setHabitaciones] = useState([]);
+  const [isLoadingHabitaciones, setIsLoadingHabitaciones] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/hospital/pisos`)
+      .then((res) => res.json())
+      .then((data) => setPisos(data.map((p) => p.piso)))
+      .catch(() => setPisos([]))
+      .finally(() => setIsLoadingPisos(false));
+  }, []);
+
+  const seleccionarPiso = useCallback((nuevoPiso) => {
+    setPiso(nuevoPiso);
+    setHabitacion('');
+    setErrors((prev) => ({ ...prev, piso: undefined, habitacion: undefined }));
+    setIsLoadingHabitaciones(true);
+    fetch(`${API_URL}/api/hospital/habitaciones?piso=${encodeURIComponent(nuevoPiso)}`)
+      .then((res) => res.json())
+      .then(setHabitaciones)
+      .catch(() => setHabitaciones([]))
+      .finally(() => setIsLoadingHabitaciones(false));
+  }, []);
+
+  const seleccionarHabitacion = useCallback((nuevaHabitacion) => {
+    setHabitacion(nuevaHabitacion);
+    setErrors((prev) => ({ ...prev, habitacion: undefined }));
+  }, []);
+
   const validate = () => {
     const next = {};
     if (!nombre.trim()) next.nombre = 'El nombre es obligatorio';
     if (!parentesco.trim()) next.parentesco = 'El parentesco es obligatorio';
-    if (!habitacion.trim()) next.habitacion = 'La habitación es obligatoria';
+    if (!piso) next.piso = 'El piso es obligatorio';
+    if (!habitacion) next.habitacion = 'La habitación es obligatoria';
     if (!nombrePaciente.trim()) next.nombrePaciente = 'El nombre del paciente es obligatorio';
     setErrors(next);
 
@@ -64,7 +97,7 @@ export default function FamiliarFormScreen() {
 
       setLoadingField(field);
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
@@ -95,6 +128,7 @@ export default function FamiliarFormScreen() {
       const formData = new FormData();
       formData.append('nombre', nombre);
       formData.append('parentesco', parentesco);
+      formData.append('piso', piso);
       formData.append('habitacion', habitacion);
       formData.append('nombrePaciente', nombrePaciente);
 
@@ -175,6 +209,31 @@ export default function FamiliarFormScreen() {
     </TouchableOpacity>
   );
 
+  const renderChipSelector = (label, options, selected, onSelect, isLoadingOptions, errorMsg, emptyHint) => (
+    <View style={s.inputWrapper}>
+      <Text style={s.inputLabel}>{label}</Text>
+      {isLoadingOptions ? (
+        <ActivityIndicator color={COLORS.royalBlue} style={{ marginVertical: 8 * scale }} />
+      ) : options.length === 0 ? (
+        <Text style={s.hintText}>{emptyHint}</Text>
+      ) : (
+        <View style={s.chipRow}>
+          {options.map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[s.chip, selected === opt && s.chipSelected]}
+              onPress={() => onSelect(opt)}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.chipText, selected === opt && s.chipTextSelected]}>{opt}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {errorMsg ? <Text style={s.errorText}>{errorMsg}</Text> : null}
+    </View>
+  );
+
   const renderInput = (id, label, placeholder, value, setValue, nameOnly = false) => (
     <View style={s.inputWrapper}>
       <Text style={s.inputLabel}>{label}</Text>
@@ -216,7 +275,7 @@ export default function FamiliarFormScreen() {
                   <TouchableOpacity onPress={() => router.back()} style={s.iconButton}>
                     <Ionicons name="chevron-back" size={22 * scale} color="#ffffff" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton}>
+                  <TouchableOpacity onPress={() => router.push('/hospital')} style={s.iconButton}>
                     <Ionicons name="home-outline" size={20 * scale} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
@@ -246,7 +305,18 @@ export default function FamiliarFormScreen() {
                 </View>
 
                 {/* Formulario Paciente */}
-                {renderInput('habitacion', 'HABITACIÓN / CUARTO *', 'Ej. 214-B', habitacion, setHabitacion)}
+                {renderChipSelector('PISO *', pisos, piso, seleccionarPiso, isLoadingPisos, errors.piso)}
+                {piso
+                  ? renderChipSelector(
+                      'HABITACIÓN / CUARTO *',
+                      habitaciones,
+                      habitacion,
+                      seleccionarHabitacion,
+                      isLoadingHabitaciones,
+                      errors.habitacion,
+                      'Este piso no tiene habitaciones registradas'
+                    )
+                  : null}
                 {renderInput('nombrePaciente', 'NOMBRE DEL PACIENTE *', 'Nombre completo del paciente', nombrePaciente, setNombrePaciente, true)}
 
                 {/* Botón Final */}
@@ -312,6 +382,19 @@ const createStyles = (scale) =>
     errorText: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: '600', marginTop: 6 * scale },
     hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 * scale },
     hintText: { color: COLORS.silver, fontSize: 11 * scale, fontStyle: 'italic' },
+
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 * scale },
+    chip: {
+      paddingHorizontal: 16 * scale,
+      paddingVertical: 10 * scale,
+      borderRadius: 12,
+      backgroundColor: '#ffffff',
+      borderWidth: 1,
+      borderColor: '#d1d5db',
+    },
+    chipSelected: { backgroundColor: COLORS.royalBlue, borderColor: COLORS.royalBlue },
+    chipText: { color: '#4b5563', fontSize: 14 * scale, fontWeight: '600' },
+    chipTextSelected: { color: COLORS.white },
 
     pacienteCard: { backgroundColor: COLORS.royalBlueSoft, padding: 16 * scale, borderRadius: 12, marginBottom: 20 * scale, marginTop: 10 * scale },
     pacienteTitle: { color: COLORS.palatinateBlue, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },

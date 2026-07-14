@@ -46,7 +46,7 @@ export default function TipoVisitaScreen() {
                   <Ionicons name="chevron-back" size={24 * scale} color="#ffffff" />
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton}>
+                <TouchableOpacity onPress={() => router.push('/hospital')} style={s.iconButton}>
                   <Ionicons name="home-outline" size={20 * scale} color="#ffffff" />
                 </TouchableOpacity>
               </View>

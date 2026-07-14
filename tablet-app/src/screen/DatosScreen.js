@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   View,
@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
 import { useScale } from '../hooks/useScale';
 import { sanitizeName } from '../utils/validators';
+import AutocompleteInput from '../components/AutocompleteInput';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -36,6 +37,43 @@ export default function DatosScreen() {
   const [errors, setErrors] = useState({});
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const [empresaSuggestions, setEmpresaSuggestions] = useState([]);
+  const [showEmpresaSuggestions, setShowEmpresaSuggestions] = useState(false);
+  const empresaDebounceRef = useRef(null);
+
+  const buscarEmpresas = (texto) => {
+    if (empresaDebounceRef.current) clearTimeout(empresaDebounceRef.current);
+    if (!texto.trim()) {
+      setEmpresaSuggestions([]);
+      return;
+    }
+    empresaDebounceRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/proveedores/empresas?q=${encodeURIComponent(texto)}`)
+        .then((res) => res.json())
+        .then(setEmpresaSuggestions)
+        .catch(() => setEmpresaSuggestions([]));
+    }, 300);
+  };
+
+  const handleEmpresaChange = (text) => {
+    setEmpresa(text);
+    setShowEmpresaSuggestions(true);
+    buscarEmpresas(text);
+    if (errors.empresa) setErrors((prev) => ({ ...prev, empresa: undefined }));
+  };
+
+  const seleccionarEmpresa = (nombre) => {
+    setEmpresa(nombre);
+    setShowEmpresaSuggestions(false);
+    setEmpresaSuggestions([]);
+  };
+
+  const handleEmpresaBlur = () => {
+    setFocusedInput(null);
+    // Retraso para que el tap en una sugerencia registre antes de ocultar la lista.
+    setTimeout(() => setShowEmpresaSuggestions(false), 150);
+  };
 
   const validate = () => {
     const next = {};
@@ -199,7 +237,26 @@ const handleRegister = async () => {
                 </View>
 
                 <View style={s.formContainer}>
-                  {renderInput('empresa', 'EMPRESA / PROVEEDOR *', 'Nombre de la empresa', empresa, setEmpresa)}
+                  <View style={s.inputContainer}>
+                    <Text style={s.inputLabel}>EMPRESA / PROVEEDOR *</Text>
+                    <AutocompleteInput
+                      scale={scale}
+                      wrapperStyle={{ zIndex: 30 }}
+                      inputStyle={[s.textInput, focusedInput === 'empresa' && s.textInputFocused, errors.empresa && s.textInputError]}
+                      placeholder="Nombre de la empresa"
+                      placeholderTextColor="#9ca3af"
+                      value={empresa}
+                      onChangeText={handleEmpresaChange}
+                      onFocus={() => { setFocusedInput('empresa'); setShowEmpresaSuggestions(true); }}
+                      onBlur={handleEmpresaBlur}
+                      suggestions={empresaSuggestions}
+                      showSuggestions={showEmpresaSuggestions}
+                      onSelectSuggestion={seleccionarEmpresa}
+                      autoCapitalize="words"
+                      editable={!isLoading}
+                    />
+                    {errors.empresa ? <Text style={s.errorText}>{errors.empresa}</Text> : null}
+                  </View>
                   {renderInput('representante', 'REPRESENTANTE *', 'Nombre completo del representante', representante, setRepresentante, true)}
                   {renderInput('motivo', 'MOTIVO DE VISITA *', 'Descripción del motivo', motivo, setMotivo)}
                   {renderInput('contacto', 'PERSONA DE CONTACTO *', 'Nombre del contacto interno', contacto, setContacto, true)}

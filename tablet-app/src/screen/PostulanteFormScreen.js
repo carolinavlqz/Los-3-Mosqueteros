@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../theme/colors';
 import { useScale } from '../hooks/useScale';
 import { sanitizeName } from '../utils/validators';
+import AutocompleteInput from '../components/AutocompleteInput';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -36,12 +37,48 @@ export default function PostulanteFormScreen() {
   const [area, setArea] = useState('');
   const [responsable, setResponsable] = useState('');
   const [tipoCita, setTipoCita] = useState('');
-  const [cvEntregado, setCvEntregado] = useState(false); 
-  
+
   const [focusedInput, setFocusedInput] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [photoError, setPhotoError] = useState(null);
+
+  const [responsableSuggestions, setResponsableSuggestions] = useState([]);
+  const [showResponsableSuggestions, setShowResponsableSuggestions] = useState(false);
+  const responsableDebounceRef = useRef(null);
+
+  const buscarResponsables = (texto) => {
+    if (responsableDebounceRef.current) clearTimeout(responsableDebounceRef.current);
+    if (!texto.trim()) {
+      setResponsableSuggestions([]);
+      return;
+    }
+    responsableDebounceRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/postulantes/responsables?q=${encodeURIComponent(texto)}`)
+        .then((res) => res.json())
+        .then(setResponsableSuggestions)
+        .catch(() => setResponsableSuggestions([]));
+    }, 300);
+  };
+
+  const handleResponsableChange = (text) => {
+    const limpio = sanitizeName(text);
+    setResponsable(limpio);
+    setShowResponsableSuggestions(true);
+    buscarResponsables(limpio);
+    if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: undefined }));
+  };
+
+  const seleccionarResponsable = (nombre) => {
+    setResponsable(nombre);
+    setShowResponsableSuggestions(false);
+    setResponsableSuggestions([]);
+  };
+
+  const handleResponsableBlur = () => {
+    setFocusedInput(null);
+    setTimeout(() => setShowResponsableSuggestions(false), 150);
+  };
 
   const validate = () => {
     const next = {};
@@ -68,7 +105,7 @@ export default function PostulanteFormScreen() {
 
       setLoadingField(field);
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
@@ -100,8 +137,7 @@ export default function PostulanteFormScreen() {
       formData.append('area', area);
       formData.append('responsable', responsable);
       formData.append('tipoCita', tipoCita);
-      formData.append('cvEntregado', cvEntregado ? 'true' : 'false');
-      
+
       if (fotoPostulante) {
         if (Platform.OS === 'web') {
           const blob = await fetch(fotoPostulante).then(r => r.blob());
@@ -221,7 +257,7 @@ export default function PostulanteFormScreen() {
                   <TouchableOpacity onPress={() => router.back()} style={s.iconButton} disabled={isLoading}>
                     <Ionicons name="chevron-back" size={22 * scale} color="#ffffff" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton} disabled={isLoading}>
+                  <TouchableOpacity onPress={() => router.push('/hospital')} style={s.iconButton} disabled={isLoading}>
                     <Ionicons name="home-outline" size={20 * scale} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
@@ -252,20 +288,33 @@ export default function PostulanteFormScreen() {
                 {/* Formulario de Postulación */}
                 {renderInput('puesto', 'PUESTO AL QUE APLICA *', 'Ej. Enfermero General, Médico...', puesto, setPuesto)}
                 {renderInput('area', 'ÁREA / DEPARTAMENTO *', 'Seleccionar área...', area, setArea)}
-                {renderInput('responsable', 'PERSONAL DE RH QUE LO ATIENDE *', 'Nombre del reclutador', responsable, setResponsable, true)}
+                <View style={s.inputWrapper}>
+                  <Text style={s.inputLabel}>PERSONAL DE RH QUE LO ATIENDE *</Text>
+                  <AutocompleteInput
+                    scale={scale}
+                    wrapperStyle={{ zIndex: 30 }}
+                    inputStyle={[s.textInput, focusedInput === 'responsable' && s.textInputFocused, errors.responsable && s.textInputError]}
+                    placeholder="Nombre del reclutador"
+                    placeholderTextColor="#9ca3af"
+                    value={responsable}
+                    onChangeText={handleResponsableChange}
+                    onFocus={() => { setFocusedInput('responsable'); setShowResponsableSuggestions(true); }}
+                    onBlur={handleResponsableBlur}
+                    suggestions={responsableSuggestions}
+                    showSuggestions={showResponsableSuggestions}
+                    onSelectSuggestion={seleccionarResponsable}
+                    autoCapitalize="words"
+                    editable={!isLoading}
+                  />
+                  {!errors.responsable ? (
+                    <View style={s.hintRow}>
+                      <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
+                      <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
+                    </View>
+                  ) : null}
+                  {errors.responsable ? <Text style={s.errorText}>{errors.responsable}</Text> : null}
+                </View>
                 {renderInput('tipoCita', 'TIPO DE CITA *', 'Seleccionar tipo...', tipoCita, setTipoCita)}
-
-                {/* Checkbox CV */}
-                <TouchableOpacity 
-                  style={s.checkboxRow} 
-                  activeOpacity={0.7} 
-                  onPress={() => !isLoading && setCvEntregado(!cvEntregado)}
-                >
-                  <View style={[s.checkbox, cvEntregado && s.checkboxChecked]}>
-                    {cvEntregado && <Ionicons name="checkmark" size={16 * scale} color="#ffffff" />}
-                  </View>
-                  <Text style={s.checkboxLabel}>CV / Currículum entregado en recepción</Text>
-                </TouchableOpacity>
 
                 {/* Botón Final */}
                 <TouchableOpacity
@@ -336,11 +385,6 @@ const createStyles = (scale) =>
     postulacionCard: { backgroundColor: COLORS.brandRedSoft, padding: 16 * scale, borderRadius: 12, marginBottom: 20 * scale, marginTop: 10 * scale, borderWidth: 1, borderColor: 'rgba(219,24,48,0.25)' },
     postulacionTitle: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
     postulacionSubtitle: { color: COLORS.palatinateBlue, fontSize: 14 * scale, marginTop: 4 },
-
-    checkboxRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 * scale, marginTop: 4 * scale, backgroundColor: '#ffffff', padding: 16 * scale, borderRadius: 12, borderWidth: 1, borderColor: '#d1d5db' },
-    checkbox: { width: 24 * scale, height: 24 * scale, borderRadius: 6, borderWidth: 2, borderColor: '#9ca3af', marginRight: 12 * scale, alignItems: 'center', justifyContent: 'center' },
-    checkboxChecked: { backgroundColor: COLORS.royalBlue, borderColor: COLORS.royalBlue },
-    checkboxLabel: { color: '#374151', fontSize: 15 * scale, flex: 1, fontWeight: '500' },
 
     registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     registerButtonDisabled: { backgroundColor: COLORS.silver },

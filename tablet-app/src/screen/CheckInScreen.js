@@ -46,7 +46,7 @@ export default function CheckInScreen() {
               <TouchableOpacity
                 style={s.iconButton}
                 activeOpacity={0.7}
-                onPress={() => router.push('/')}
+                onPress={() => router.push('/hospital')}
               >
                 <Ionicons name="home-outline" size={22 * scale} color={COLORS.white} />
               </TouchableOpacity>

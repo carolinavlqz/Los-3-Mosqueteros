@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router'; 
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -7,26 +7,43 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  useWindowDimensions,
   Platform,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../theme/colors';
-import { useScale } from '../hooks/useScale';
+
+const BASE_WIDTH = 375;
+const TABLET_BREAKPOINT = 600;
+const MAX_CONTENT_WIDTH_PHONE = 480;
+const MAX_CONTENT_WIDTH_TABLET = 760;
+
+function useScale() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isTablet = width >= TABLET_BREAKPOINT;
+
+  const contentWidth = isTablet
+    ? Math.min(width * 0.9, MAX_CONTENT_WIDTH_TABLET)
+    : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
+
+  const rawScale = contentWidth / BASE_WIDTH;
+  const scale = Math.max(0.85, Math.min(rawScale, 1.3));
+
+  return { isLandscape, isTablet, contentWidth, scale };
+}
 
 const PISOS = [
-  { id: 'b1', label: 'B1', name: 'Sótano', areas: '4 áreas' },
-  { id: 'pb', label: 'PB', name: 'Planta Baja', areas: '5 áreas' },
-  { id: 'p1', label: 'P1', name: 'Piso 1', areas: '4 áreas' },
-  { id: 'p2', label: 'P2', name: 'Piso 2', areas: '4 áreas' },
-  { id: 'p3', label: 'P3', name: 'Piso 3', areas: '4 áreas' },
-  { id: 'p4', label: 'P4', name: 'Piso 4', areas: '4 áreas' },
+  { id: 'b1', label: 'B1', name: 'Sótano', areas: '2 áreas' },
+  { id: 'pb', label: 'PB', name: 'Planta Baja', areas: '19 áreas' },
+  { id: 'p1', label: 'P1', name: 'Piso 1', areas: '7 áreas' },
+  { id: 'p2', label: 'P2', name: 'Piso 2', areas: '7 áreas' },
+  { id: 'p3', label: 'P3', name: 'Piso 3', areas: ' áreas' },
+  { id: 'p4', label: 'P4', name: 'Piso 4', areas: '2 áreas' },
 ];
 
 export default function PisoScreen() {
   const router = useRouter();
-  // Ahora que importaste useLocalSearchParams, esto funcionará:
-  const { proveedorPhoto, idPhoto } = useLocalSearchParams(); 
   const { isLandscape, isTablet, contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
@@ -36,17 +53,13 @@ export default function PisoScreen() {
     if (!selectedPiso) return;
     router.push({
       pathname: '/proveedor-area',
-      params: { 
-        pisoSeleccionado: selectedPiso.name,
-        proveedorPhoto, 
-        idPhoto 
-      },
+      params: { pisoSeleccionado: selectedPiso.name }
     });
   };
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
+      <StatusBar barStyle="light-content" backgroundColor="#1a355b" />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={s.outerContainer}>
@@ -55,7 +68,7 @@ export default function PisoScreen() {
             {/* Header */}
             <View style={[s.header, (isLandscape || isTablet) && s.headerLandscape]}>
               <TouchableOpacity onPress={() => router.back()} style={s.backButton}>
-                <Ionicons name="chevron-back" size={22 * scale} color={COLORS.periwinkle} />
+                <Ionicons name="chevron-back" size={22 * scale} color="#8ba4c9" />
                 <Text style={s.backText}>Regresar</Text>
               </TouchableOpacity>
               <Text style={s.stepTitle}>REGISTRO — PROVEEDOR</Text>
@@ -107,7 +120,7 @@ export default function PisoScreen() {
                       
                       {isSelected && (
                         <View style={s.checkIconContainer}>
-                          <Ionicons name="checkmark" size={18 * scale} color={COLORS.royalBlue} />
+                          <Ionicons name="checkmark" size={18 * scale} color="#00a884" />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -138,7 +151,7 @@ const createStyles = (scale) =>
     container: { flex: 1 },
 
     header: {
-      backgroundColor: COLORS.palatinateBlue,
+      backgroundColor: '#1a355b',
       paddingHorizontal: 28 * scale,
       paddingTop: Platform.OS === 'android' ? 40 : 20,
       paddingBottom: 28 * scale,
@@ -147,21 +160,21 @@ const createStyles = (scale) =>
     },
     headerLandscape: { paddingHorizontal: 48 * scale },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
-    backText: { color: COLORS.periwinkle, fontSize: 15 * scale, marginLeft: 2 },
-    stepTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
-    mainTitle: { color: COLORS.white, fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
+    backText: { color: '#8ba4c9', fontSize: 15 * scale, marginLeft: 2 },
+    stepTitle: { color: '#00a884', fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
+    mainTitle: { color: '#ffffff', fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
 
     stepper: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 * scale },
-    stepCompleted: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepActive: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
+    stepCompleted: { backgroundColor: '#00a884', width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
+    stepActive: { backgroundColor: '#00a884', width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
     stepInactive: { borderColor: 'rgba(255,255,255,0.25)', borderWidth: 2, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepTextActive: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 * scale },
-    stepTextInactive: { color: COLORS.periwinkle, fontWeight: 'bold', fontSize: 14 * scale },
+    stepTextActive: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 * scale },
+    stepTextInactive: { color: '#8ba4c9', fontWeight: 'bold', fontSize: 14 * scale },
     stepLine: { width: 32 * scale, height: 2, backgroundColor: 'rgba(255,255,255,0.2)' },
-    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: COLORS.royalBlue },
+    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: '#00a884' },
     stepLabels: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 26 * scale },
-    labelActive: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '600' },
-    labelInactive: { color: COLORS.periwinkle, fontSize: 12 * scale },
+    labelActive: { color: '#00a884', fontSize: 12 * scale, fontWeight: '600' },
+    labelInactive: { color: '#5b7398', fontSize: 12 * scale },
 
     bottomSection: { flex: 1, paddingHorizontal: 28 * scale, paddingTop: 28 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
     bottomSectionLandscape: { paddingHorizontal: 48 * scale },
@@ -188,16 +201,16 @@ const createStyles = (scale) =>
       position: 'relative',
     },
     cardSelected: {
-      borderColor: COLORS.royalBlue,
-      backgroundColor: COLORS.royalBlueSoft,
+      borderColor: '#00a884',
+      backgroundColor: '#e6f7f4',
     },
     cardLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', marginBottom: 8 * scale },
-    cardName: { color: COLORS.palatinateBlue, fontSize: 18 * scale, fontWeight: 'bold', marginBottom: 4 * scale },
+    cardName: { color: '#1e3a68', fontSize: 18 * scale, fontWeight: 'bold', marginBottom: 4 * scale },
     cardAreas: { color: '#6b7280', fontSize: 13 * scale },
-    textSelected: { color: COLORS.royalBlue },
+    textSelected: { color: '#0fa38b' },
     checkIconContainer: { position: 'absolute', bottom: 16 * scale, right: 16 * scale },
 
-    continueButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center' },
-    continueButtonDisabled: { backgroundColor: COLORS.silver },
-    continueText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
+    continueButton: { backgroundColor: '#00a884', padding: 18 * scale, borderRadius: 16, alignItems: 'center' },
+    continueButtonDisabled: { backgroundColor: '#a7c4b9' },
+    continueText: { color: '#ffffff', fontSize: 17 * scale, fontWeight: 'bold' },
   });

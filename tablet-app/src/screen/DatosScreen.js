@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   View,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  useWindowDimensions,
   Platform,
   ScrollView,
   TextInput,
@@ -14,12 +15,26 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../theme/colors';
-import { useScale } from '../hooks/useScale';
-import { sanitizeName } from '../utils/validators';
-import AutocompleteInput from '../components/AutocompleteInput';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const BASE_WIDTH = 375;
+const TABLET_BREAKPOINT = 600;
+const MAX_CONTENT_WIDTH_PHONE = 480;
+const MAX_CONTENT_WIDTH_TABLET = 760;
+
+function useScale() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isTablet = width >= TABLET_BREAKPOINT;
+
+  const contentWidth = isTablet
+    ? Math.min(width * 0.9, MAX_CONTENT_WIDTH_TABLET)
+    : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
+
+  const rawScale = contentWidth / BASE_WIDTH;
+  const scale = Math.max(0.85, Math.min(rawScale, 1.3));
+
+  return { isLandscape, isTablet, contentWidth, scale };
+}
 
 export default function DatosScreen() {
   const router = useRouter();
@@ -34,159 +49,118 @@ export default function DatosScreen() {
   const [motivo, setMotivo] = useState('');
   const [contacto, setContacto] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
-  const [errors, setErrors] = useState({});
-
+  
+  // Estados para controlar los mensajes de error por campo
+  const [errors, setErrors] = useState({
+    empresa: '',
+    representante: '',
+    motivo: '',
+    contacto: ''
+  });
+  
   const [isLoading, setIsLoading] = useState(false);
 
-  const [empresaSuggestions, setEmpresaSuggestions] = useState([]);
-  const [showEmpresaSuggestions, setShowEmpresaSuggestions] = useState(false);
-  const empresaDebounceRef = useRef(null);
+  // El formulario es válido si ningún campo está vacío y no hay errores activos
+  const isFormValid = 
+    empresa.trim() !== '' && 
+    representante.trim() !== '' && 
+    motivo.trim() !== '' && 
+    contacto.trim() !== '' &&
+    !errors.empresa &&
+    !errors.representante &&
+    !errors.motivo &&
+    !errors.contacto;
 
-  const buscarEmpresas = (texto) => {
-    if (empresaDebounceRef.current) clearTimeout(empresaDebounceRef.current);
-    if (!texto.trim()) {
-      setEmpresaSuggestions([]);
-      return;
-    }
-    empresaDebounceRef.current = setTimeout(() => {
-      fetch(`${API_URL}/api/proveedores/empresas?q=${encodeURIComponent(texto)}`)
-        .then((res) => res.json())
-        .then(setEmpresaSuggestions)
-        .catch(() => setEmpresaSuggestions([]));
-    }, 300);
-  };
+  // Función encargada de filtrar el texto y encender/apagar alertas
+  const handleTextChange = (id, text, setValue) => {
+    // Permitimos letras (incluyendo acentos, eñes) y espacios.
+    // Al revés: si detecta algo que NO sea eso, muestra el aviso.
+    const hasInvalidChars = /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/.test(text);
 
-  const handleEmpresaChange = (text) => {
-    setEmpresa(text);
-    setShowEmpresaSuggestions(true);
-    buscarEmpresas(text);
-    if (errors.empresa) setErrors((prev) => ({ ...prev, empresa: undefined }));
-  };
-
-  const seleccionarEmpresa = (nombre) => {
-    setEmpresa(nombre);
-    setShowEmpresaSuggestions(false);
-    setEmpresaSuggestions([]);
-  };
-
-  const handleEmpresaBlur = () => {
-    setFocusedInput(null);
-    // Retraso para que el tap en una sugerencia registre antes de ocultar la lista.
-    setTimeout(() => setShowEmpresaSuggestions(false), 150);
-  };
-
-  const validate = () => {
-    const next = {};
-    if (!empresa.trim()) next.empresa = 'La empresa es obligatoria';
-    if (!representante.trim()) next.representante = 'El representante es obligatorio';
-    if (!motivo.trim()) next.motivo = 'El motivo de visita es obligatorio';
-    if (!contacto.trim()) next.contacto = 'La persona de contacto es obligatoria';
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
-const handleRegister = async () => {
-  if (!validate()) return;
-  setIsLoading(true);
-
-  try {
-    const formData = new FormData();
-    formData.append('pisoSeleccionado', pisoSeleccionado);
-    formData.append('areaSeleccionada', areaSeleccionada);
-    formData.append('empresa', empresa);
-    formData.append('representante', representante);
-    formData.append('motivo', motivo);
-    formData.append('contacto', contacto);
-
-    console.log('Plataforma detectada:', Platform.OS); // 👈 agrega esto también
-    console.log('proveedorPhoto:', proveedorPhoto);
-
-    if (proveedorPhoto) {
-      if (Platform.OS === 'web') {
-        const blob = await fetch(proveedorPhoto).then(r => r.blob());
-        console.log('Blob generado, tamaño:', blob.size); // 👈 y esto
-        formData.append('foto_persona', blob, 'proveedor.jpg');
-      } else {
-        formData.append('foto_persona', {
-          uri: proveedorPhoto,
-          name: 'proveedor.jpg',
-          type: 'image/jpeg',
-        });
-      }
+    if (hasInvalidChars) {
+      setErrors(prev => ({
+        ...prev,
+        [id]: 'Solo se permiten letras, sin números ni caracteres especiales.'
+      }));
+    } else {
+      setErrors(prev => ({ ...prev, [id]: '' }));
     }
 
-    if (idPhoto) {
-      if (Platform.OS === 'web') {
-        const blob = await fetch(idPhoto).then(r => r.blob());
-        formData.append('foto_ine', blob, 'ine.jpg');
-      } else {
-        formData.append('foto_ine', {
-          uri: idPhoto,
-          name: 'ine.jpg',
-          type: 'image/jpeg',
-        });
-      }
-    }
+    // Limpiamos el texto al vuelo eliminando lo que no sean letras o espacios
+    const cleanedText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+    setValue(cleanedText);
+  };
 
-    const response = await fetch(`${API_URL}/api/proveedores`, {
-      method: 'POST',
-      body: formData,
-    });
+  const handleRegister = async () => {
+    if (!isFormValid) return;
+    
+    setIsLoading(true);
 
-    const data = await response.json();
-
-    if (response.ok) {
-      router.push({
-        pathname: '/proveedor-exito',
-        params: {
+    try {
+      const urlDelServidor = 'http://10.1.17.35:3000/api/proveedores';
+      
+      const response = await fetch(urlDelServidor, {
+        method: 'POST', 
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           pisoSeleccionado,
           areaSeleccionada,
           empresa,
           representante,
-          folio: data.folio,
-        },
+          motivo,
+          contacto,
+          foto_persona: proveedorPhoto,
+          foto_ine: idPhoto            
+        }),
       });
-    } else {
-      Alert.alert('Error', data.mensaje || 'Error al registrar.');
-    }
-  } catch (error) {
-    console.error(error);
-    Alert.alert('Error', 'No hay conexión con el servidor.');
-  } finally {
-    setIsLoading(false);
-  }
-};
 
-  const renderInput = (id, label, placeholder, value, setValue, nameOnly = false) => (
+      const data = await response.json();
+
+      if (response.ok) {
+        router.push({
+          pathname: '/proveedor-exito',
+          params: { pisoSeleccionado, areaSeleccionada, empresa, representante }
+        });
+      } else {
+        Alert.alert('Error', data.mensaje || 'Hubo un problema al registrar la entrada.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error de conexión', 'No se pudo conectar con el servidor.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderInput = (id, label, placeholder, value, setValue) => (
     <View style={s.inputContainer}>
       <Text style={s.inputLabel}>{label}</Text>
       <TextInput
-        style={[s.textInput, focusedInput === id && s.textInputFocused, errors[id] && s.textInputError]}
+        style={[
+          s.textInput, 
+          focusedInput === id && s.textInputFocused,
+          errors[id] !== '' && s.textInputError
+        ]}
         placeholder={placeholder}
         placeholderTextColor="#9ca3af"
         value={value}
-        onChangeText={(text) => {
-          setValue(nameOnly ? sanitizeName(text) : text);
-          if (errors[id]) setErrors((prev) => ({ ...prev, [id]: undefined }));
-        }}
+        onChangeText={(text) => handleTextChange(id, text, setValue)}
         onFocus={() => setFocusedInput(id)}
         onBlur={() => setFocusedInput(null)}
         autoCapitalize="words"
         editable={!isLoading}
       />
-      {nameOnly && !errors[id] ? (
-        <View style={s.hintRow}>
-          <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
-          <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
-        </View>
-      ) : null}
-      {errors[id] ? <Text style={s.errorText}>{errors[id]}</Text> : null}
+      {errors[id] !== '' && (
+        <Text style={s.errorText}>{errors[id]}</Text>
+      )}
     </View>
   );
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
+      <StatusBar barStyle="light-content" backgroundColor="#1a355b" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={s.outerContainer}>
@@ -194,7 +168,7 @@ const handleRegister = async () => {
               {/* Header */}
               <View style={[s.header, (isLandscape || isTablet) && s.headerLandscape]}>
                 <TouchableOpacity onPress={() => router.back()} style={s.backButton} disabled={isLoading}>
-                  <Ionicons name="chevron-back" size={22 * scale} color={COLORS.periwinkle} />
+                  <Ionicons name="chevron-back" size={22 * scale} color="#8ba4c9" />
                   <Text style={s.backText}>Regresar</Text>
                 </TouchableOpacity>
                 <Text style={s.stepTitle}>REGISTRO — PROVEEDOR</Text>
@@ -229,7 +203,7 @@ const handleRegister = async () => {
               {/* Body */}
               <View style={[s.bottomSection, (isLandscape || isTablet) && s.bottomSectionLandscape]}>
                 <View style={s.locationCard}>
-                  <Ionicons name="location" size={24 * scale} color={COLORS.royalBlue} />
+                  <Ionicons name="location" size={24 * scale} color="#00a884" />
                   <View style={{ marginLeft: 12 * scale }}>
                     <Text style={s.locationTitle}>Ubicación seleccionada</Text>
                     <Text style={s.locationSubtitle}>{pisoSeleccionado} — {areaSeleccionada}</Text>
@@ -237,35 +211,16 @@ const handleRegister = async () => {
                 </View>
 
                 <View style={s.formContainer}>
-                  <View style={s.inputContainer}>
-                    <Text style={s.inputLabel}>EMPRESA / PROVEEDOR *</Text>
-                    <AutocompleteInput
-                      scale={scale}
-                      wrapperStyle={{ zIndex: 30 }}
-                      inputStyle={[s.textInput, focusedInput === 'empresa' && s.textInputFocused, errors.empresa && s.textInputError]}
-                      placeholder="Nombre de la empresa"
-                      placeholderTextColor="#9ca3af"
-                      value={empresa}
-                      onChangeText={handleEmpresaChange}
-                      onFocus={() => { setFocusedInput('empresa'); setShowEmpresaSuggestions(true); }}
-                      onBlur={handleEmpresaBlur}
-                      suggestions={empresaSuggestions}
-                      showSuggestions={showEmpresaSuggestions}
-                      onSelectSuggestion={seleccionarEmpresa}
-                      autoCapitalize="words"
-                      editable={!isLoading}
-                    />
-                    {errors.empresa ? <Text style={s.errorText}>{errors.empresa}</Text> : null}
-                  </View>
-                  {renderInput('representante', 'REPRESENTANTE *', 'Nombre completo del representante', representante, setRepresentante, true)}
-                  {renderInput('motivo', 'MOTIVO DE VISITA *', 'Descripción del motivo', motivo, setMotivo)}
-                  {renderInput('contacto', 'PERSONA DE CONTACTO *', 'Nombre del contacto interno', contacto, setContacto, true)}
+                  {renderInput('empresa', 'EMPRESA / PROVEEDOR', 'Nombre de la empresa', empresa, setEmpresa)}
+                  {renderInput('representante', 'REPRESENTANTE', 'Nombre completo del representante', representante, setRepresentante)}
+                  {renderInput('motivo', 'MOTIVO DE VISITA', 'Descripción del motivo', motivo, setMotivo)}
+                  {renderInput('contacto', 'PERSONA DE CONTACTO', 'Nombre del contacto interno', contacto, setContacto)}
                 </View>
 
                 <TouchableOpacity
-                  style={[s.registerButton, isLoading && s.registerButtonDisabled]}
+                  style={[s.registerButton, (!isFormValid || isLoading) && s.registerButtonDisabled]}
                   onPress={handleRegister}
-                  disabled={isLoading}
+                  disabled={!isFormValid || isLoading}
                   activeOpacity={0.85}
                 >
                   <Text style={s.registerText}>
@@ -286,38 +241,36 @@ const createStyles = (scale) =>
     safeArea: { flex: 1, backgroundColor: '#f4f6f9' },
     outerContainer: { flex: 1, alignItems: 'center' },
     container: { flex: 1 },
-    header: { backgroundColor: COLORS.palatinateBlue, paddingHorizontal: 28 * scale, paddingTop: Platform.OS === 'android' ? 40 : 20, paddingBottom: 28 * scale, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+    header: { backgroundColor: '#1a355b', paddingHorizontal: 28 * scale, paddingTop: Platform.OS === 'android' ? 40 : 20, paddingBottom: 28 * scale, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
     headerLandscape: { paddingHorizontal: 48 * scale },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
-    backText: { color: COLORS.periwinkle, fontSize: 15 * scale, marginLeft: 2 },
-    stepTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
-    mainTitle: { color: COLORS.white, fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
+    backText: { color: '#8ba4c9', fontSize: 15 * scale, marginLeft: 2 },
+    stepTitle: { color: '#00a884', fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
+    mainTitle: { color: '#ffffff', fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
     stepper: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 * scale },
-    stepCompleted: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepActive: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
+    stepCompleted: { backgroundColor: '#00a884', width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
+    stepActive: { backgroundColor: '#00a884', width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
     stepInactive: { borderColor: 'rgba(255,255,255,0.25)', borderWidth: 2, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepTextActive: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 * scale },
-    stepTextInactive: { color: COLORS.periwinkle, fontWeight: 'bold', fontSize: 14 * scale },
+    stepTextActive: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 * scale },
+    stepTextInactive: { color: '#8ba4c9', fontWeight: 'bold', fontSize: 14 * scale },
     stepLine: { width: 32 * scale, height: 2, backgroundColor: 'rgba(255,255,255,0.2)' },
-    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: COLORS.royalBlue },
+    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: '#00a884' },
     stepLabels: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 26 * scale },
-    labelActive: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '600' },
-    labelInactive: { color: COLORS.periwinkle, fontSize: 12 * scale },
+    labelActive: { color: '#00a884', fontSize: 12 * scale, fontWeight: '600' },
+    labelInactive: { color: '#5b7398', fontSize: 12 * scale },
     bottomSection: { flex: 1, paddingHorizontal: 28 * scale, paddingTop: 24 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
     bottomSectionLandscape: { paddingHorizontal: 48 * scale },
-    locationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.royalBlueSoft, padding: 16 * scale, borderRadius: 16, marginBottom: 24 * scale },
-    locationTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1 },
-    locationSubtitle: { color: COLORS.palatinateBlue, fontSize: 16 * scale, fontWeight: 'bold', marginTop: 2 },
+    locationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e6f7f4', padding: 16 * scale, borderRadius: 16, marginBottom: 24 * scale },
+    locationTitle: { color: '#0fa38b', fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1 },
+    locationSubtitle: { color: '#1e3a68', fontSize: 16 * scale, fontWeight: 'bold', marginTop: 2 },
     formContainer: { gap: 20 * scale, marginBottom: 32 * scale },
     inputContainer: { gap: 8 * scale },
     inputLabel: { color: '#6b7280', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
     textInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, fontSize: 16 * scale, color: '#111827' },
-    textInputFocused: { borderColor: COLORS.royalBlue, backgroundColor: '#ffffff' },
-    textInputError: { borderColor: COLORS.brandRed },
-    errorText: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: '600', marginTop: 6 * scale },
-    hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 * scale },
-    hintText: { color: COLORS.silver, fontSize: 11 * scale, fontStyle: 'italic' },
-    registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center' },
-    registerButtonDisabled: { backgroundColor: COLORS.silver },
-    registerText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
+    textInputFocused: { borderColor: '#00a884', backgroundColor: '#ffffff' },
+    textInputError: { borderColor: '#dc2626' },
+    errorText: { color: '#dc2626', fontSize: 11 * scale, marginTop: -2, paddingHorizontal: 4 },
+    registerButton: { backgroundColor: '#00a884', padding: 18 * scale, borderRadius: 16, alignItems: 'center' },
+    registerButtonDisabled: { backgroundColor: '#a7c4b9' },
+    registerText: { color: '#ffffff', fontSize: 17 * scale, fontWeight: 'bold' },
   });

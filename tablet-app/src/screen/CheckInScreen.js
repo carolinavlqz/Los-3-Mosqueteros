@@ -24,12 +24,15 @@ export default function CheckInScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={s.outerContainer}>
           <View style={[s.container, { width: contentWidth }]}>
 
             {/* ENCABEZADO */}
-            <View style={s.header}>
+            <View style={[s.header, (isLandscape || isTablet) && s.headerAdaptive]}>
               <TouchableOpacity
                 style={s.iconButton}
                 activeOpacity={0.7}
@@ -53,7 +56,7 @@ export default function CheckInScreen() {
             </View>
 
             {/* CONTENIDO PRINCIPAL */}
-            <View style={s.content}>
+            <View style={[s.content, (isLandscape || isTablet) && s.contentAdaptive]}>
 
               <Text style={s.instructionText}>
                 Selecciona el tipo de visitante para iniciar el registro de entrada.
@@ -139,6 +142,9 @@ const createStyles = (scale) =>
       borderBottomLeftRadius: 28,
       borderBottomRightRadius: 28,
     },
+    headerAdaptive: {
+      paddingHorizontal: 36 * scale, // Más espacio a los lados en pantallas grandes o landscape
+    },
     iconButton: {
       backgroundColor: 'rgba(255, 255, 255, 0.15)',
       width: 48 * scale,
@@ -165,13 +171,17 @@ const createStyles = (scale) =>
     content: {
       flex: 1,
       paddingHorizontal: 24 * scale,
-      paddingTop: 32 * scale,
+      paddingTop: 28 * scale,
+      paddingBottom: 32 * scale, // Margen de seguridad abajo
+    },
+    contentAdaptive: {
+      paddingHorizontal: 36 * scale,
     },
     instructionText: {
       color: '#4b5563',
-      fontSize: 18 * scale,
-      lineHeight: 26 * scale,
-      marginBottom: 32 * scale,
+      fontSize: 17 * scale, // Reducido levemente para evitar saltos de línea innecesarios
+      lineHeight: 24 * scale,
+      marginBottom: 28 * scale,
     },
     cardsContainer: {
       flexDirection: 'column',
@@ -179,7 +189,7 @@ const createStyles = (scale) =>
     },
     cardsContainerRow: {
       flexDirection: 'row',
-      alignItems: 'stretch',
+      alignItems: 'stretch', // Fuerza a las tarjetas a medir exactamente la misma altura
       gap: 24 * scale,
     },
     card: {
@@ -191,6 +201,7 @@ const createStyles = (scale) =>
       shadowOpacity: 0.05,
       shadowRadius: 10,
       elevation: 3,
+      justifyContent: 'space-between', // Asegura una distribución limpia del contenido interno
     },
     cardRow: {
       flex: 1,
@@ -220,20 +231,20 @@ const createStyles = (scale) =>
     },
     cardTitle: {
       color: COLORS.palatinateBlue,
-      fontSize: 24 * scale,
+      fontSize: 22 * scale, // Ajustado ligeramente de 24 a 22 para prevenir wrapping agresivo en teléfonos compactos
       fontWeight: 'bold',
-      marginBottom: 12 * scale,
+      marginBottom: 10 * scale,
     },
     cardDescription: {
       color: '#6b7280',
-      fontSize: 15 * scale,
-      lineHeight: 22 * scale,
-      marginBottom: 24 * scale,
+      fontSize: 14 * scale, // Ajustado de 15 a 14 para optimizar legibilidad
+      lineHeight: 20 * scale,
+      marginBottom: 20 * scale,
     },
     cardFooter: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 'auto',
+      marginTop: 'auto', // Empuja el botón seleccionar al fondo de la tarjeta si una es más alta que la otra
     },
     selectText: {
       color: COLORS.royalBlue,

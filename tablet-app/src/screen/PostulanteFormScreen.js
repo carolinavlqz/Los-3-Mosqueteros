@@ -23,6 +23,13 @@ import AutocompleteInput from '../components/AutocompleteInput';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+// Opciones del tipo de cita
+const OPCIONES_CITA = [
+  { id: 'Entrevista', label: 'Entrevista', icon: 'chatbubbles-outline' },
+  { id: 'Entrega de papeles', label: 'Entrega de papeles', icon: 'document-text-outline' },
+  { id: 'Nuevo ingreso', label: 'Nuevo ingreso', icon: 'person-add-outline' },
+];
+
 export default function PostulanteFormScreen() {
   const router = useRouter();
   const { isLandscape, isTablet, contentWidth, scale, useRowLayout } = useScale();
@@ -36,7 +43,7 @@ export default function PostulanteFormScreen() {
   const [puesto, setPuesto] = useState('');
   const [area, setArea] = useState('');
   const [responsable, setResponsable] = useState('');
-  const [tipoCita, setTipoCita] = useState('');
+  const [tipoCita, setTipoCita] = useState(''); // Aquí se guardará la opción seleccionada
 
   const [focusedInput, setFocusedInput] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,7 +93,7 @@ export default function PostulanteFormScreen() {
     if (!puesto.trim()) next.puesto = 'El puesto es obligatorio';
     if (!area.trim()) next.area = 'El área es obligatoria';
     if (!responsable.trim()) next.responsable = 'El personal de RH es obligatorio';
-    if (!tipoCita.trim()) next.tipoCita = 'El tipo de cita es obligatorio';
+    if (!tipoCita.trim()) next.tipoCita = 'Debes seleccionar un tipo de cita';
     setErrors(next);
 
     const hasPhoto = !!fotoPostulante;
@@ -136,7 +143,7 @@ export default function PostulanteFormScreen() {
       formData.append('puesto', puesto);
       formData.append('area', area);
       formData.append('responsable', responsable);
-      formData.append('tipoCita', tipoCita);
+      formData.append('tipoCita', tipoCita); // Se envía el valor seleccionado dinámicamente
 
       if (fotoPostulante) {
         if (Platform.OS === 'web') {
@@ -211,7 +218,7 @@ export default function PostulanteFormScreen() {
           </View>
           <Text style={s.captureLabel}>{label}</Text>
         </>
-      )}
+      )}  
     </TouchableOpacity>
   );
 
@@ -288,6 +295,7 @@ export default function PostulanteFormScreen() {
                 {/* Formulario de Postulación */}
                 {renderInput('puesto', 'PUESTO AL QUE APLICA *', 'Ej. Enfermero General, Médico...', puesto, setPuesto)}
                 {renderInput('area', 'ÁREA / DEPARTAMENTO *', 'Seleccionar área...', area, setArea)}
+                
                 <View style={s.inputWrapper}>
                   <Text style={s.inputLabel}>PERSONAL DE RH QUE LO ATIENDE *</Text>
                   <AutocompleteInput
@@ -314,7 +322,43 @@ export default function PostulanteFormScreen() {
                   ) : null}
                   {errors.responsable ? <Text style={s.errorText}>{errors.responsable}</Text> : null}
                 </View>
-                {renderInput('tipoCita', 'TIPO DE CITA *', 'Seleccionar tipo...', tipoCita, setTipoCita)}
+
+                {/* MODIFICACIÓN: Selector de Tipo de Cita */}
+                <View style={s.inputWrapper}>
+                  <Text style={s.inputLabel}>TIPO DE CITA *</Text>
+                  <View style={s.selectorContainer}>
+                    {OPCIONES_CITA.map((opcion) => {
+                      const isSelected = tipoCita === opcion.id;
+                      return (
+                        <TouchableOpacity
+                          key={opcion.id}
+                          style={[
+                            s.optionButton,
+                            isSelected && s.optionButtonSelected,
+                            errors.tipoCita && s.optionButtonError
+                          ]}
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            setTipoCita(opcion.id);
+                            if (errors.tipoCita) setErrors((prev) => ({ ...prev, tipoCita: undefined }));
+                          }}
+                          disabled={isLoading}
+                        >
+                          <Ionicons 
+                            name={opcion.icon} 
+                            size={18 * scale} 
+                            color={isSelected ? COLORS.white : '#6b7280'} 
+                            style={{ marginBottom: 4 }} 
+                          />
+                          <Text style={[s.optionText, isSelected && s.optionTextSelected]}>
+                            {opcion.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {errors.tipoCita ? <Text style={s.errorText}>{errors.tipoCita}</Text> : null}
+                </View>
 
                 {/* Botón Final */}
                 <TouchableOpacity
@@ -385,6 +429,40 @@ const createStyles = (scale) =>
     postulacionCard: { backgroundColor: COLORS.brandRedSoft, padding: 16 * scale, borderRadius: 12, marginBottom: 20 * scale, marginTop: 10 * scale, borderWidth: 1, borderColor: 'rgba(219,24,48,0.25)' },
     postulacionTitle: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
     postulacionSubtitle: { color: COLORS.palatinateBlue, fontSize: 14 * scale, marginTop: 4 },
+
+    /* Nuevos Estilos del Selector */
+    selectorContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 8 * scale,
+    },
+    optionButton: {
+      flex: 1,
+      backgroundColor: '#ffffff',
+      borderWidth: 1.5,
+      borderColor: '#d1d5db',
+      borderRadius: 12,
+      paddingVertical: 12 * scale,
+      paddingHorizontal: 4 * scale,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    optionButtonSelected: {
+      backgroundColor: COLORS.royalBlue,
+      borderColor: COLORS.royalBlue,
+    },
+    optionButtonError: {
+      borderColor: COLORS.brandRed,
+    },
+    optionText: {
+      color: '#4b5563',
+      fontSize: 11 * scale,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    optionTextSelected: {
+      color: '#ffffff',
+    },
 
     registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     registerButtonDisabled: { backgroundColor: COLORS.silver },

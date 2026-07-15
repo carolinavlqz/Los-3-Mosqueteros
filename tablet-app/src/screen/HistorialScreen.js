@@ -125,7 +125,7 @@ export default function HistorialScreen() {
       </LinearGradient>
       {/* ===== FIN HEADER ===== */}
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center' }}>
+      <ScrollView contentContainerStyle={s.scrollContainer}>
         <View style={[s.container, { width: contentWidth }]}>
 
           <View style={s.searchContainer}>
@@ -188,17 +188,17 @@ export default function HistorialScreen() {
                         </View>
                       )}
 
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.visitorName}>{v.nombre || 'Sin nombre'}</Text>
+                      <View style={{ flex: 1, paddingRight: 8 * scale }}>
+                        <Text style={s.visitorName} numberOfLines={2}>{v.nombre || 'Sin nombre'}</Text>
                         <View style={s.badgesRow}>
                           <View style={[s.badge, getBadgeStyle(v.tipo)]}>
                             <Text style={[s.badgeText, getBadgeTextStyle(v.tipo)]}>{v.tipo}</Text>
                           </View>
-                          <Text style={s.folioText}>{v.folio}</Text>
+                          <Text style={s.folioText} numberOfLines={1}>{v.folio}</Text>
                         </View>
                         <View style={s.locationRow}>
                           <Ionicons name="location-outline" size={14 * scale} color={COLORS.silver} />
-                          <Text style={s.locationText}>{v.destino || 'Sin destino asignado'}</Text>
+                          <Text style={s.locationText} numberOfLines={1}>{v.destino || 'Sin destino'}</Text>
                         </View>
                         <Text style={s.dateText}>{v.fecha}</Text>
                       </View>
@@ -230,7 +230,8 @@ export default function HistorialScreen() {
 const createStyles = (scale) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#F4F6FA' },
-    container: { paddingBottom: 40 * scale },
+    scrollContainer: { flexGrow: 1, alignItems: 'center' },
+    container: { paddingBottom: 40 * scale, paddingHorizontal: 16 * scale },
 
     header: {
       alignItems: 'center',
@@ -296,33 +297,33 @@ const createStyles = (scale) =>
       textShadowRadius: 4, 
     },
 
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, marginHorizontal: 24 * scale, marginTop: 24 * scale, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, borderRadius: 14, borderWidth: 1, borderColor: '#e5e7eb' },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, marginTop: 24 * scale, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, borderRadius: 14, borderWidth: 1, borderColor: '#e5e7eb' },
     searchInput: { flex: 1, marginLeft: 10 * scale, fontSize: 16 * scale, color: '#111827' },
 
-    filtersContainer: { flexDirection: 'row', marginHorizontal: 24 * scale, marginTop: 16 * scale, gap: 10 * scale, flexWrap: 'wrap' },
+    filtersContainer: { flexDirection: 'row', marginTop: 16 * scale, gap: 10 * scale, flexWrap: 'wrap', justifyContent: 'flex-start' },
     filterChip: { backgroundColor: COLORS.white, paddingHorizontal: 16 * scale, paddingVertical: 8 * scale, borderRadius: 20, borderWidth: 1, borderColor: '#e5e7eb' },
     filterChipActive: { backgroundColor: COLORS.royalBlue, borderColor: COLORS.royalBlue },
     filterText: { color: '#4b5563', fontSize: 13 * scale, fontWeight: '600' },
     filterTextActive: { color: COLORS.white },
 
-    statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 24 * scale, marginTop: 24 * scale, gap: 12 * scale },
-    statCard: { flex: 1, backgroundColor: COLORS.white, paddingVertical: 16 * scale, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f3f4f6', shadowColor: '#031E5D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, elevation: 2 },
+    statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 * scale, gap: 12 * scale, flexWrap: 'wrap' },
+    statCard: { flex: 1, minWidth: '28%', backgroundColor: COLORS.white, paddingVertical: 16 * scale, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f3f4f6', shadowColor: '#031E5D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, elevation: 2 },
     statNumber: { fontSize: 24 * scale, fontWeight: '900', marginBottom: 4 },
     statLabel: { color: COLORS.silver, fontSize: 12 * scale, fontWeight: '600' },
 
-    sectionHeader: { color: COLORS.silver, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1.5, marginHorizontal: 24 * scale, marginTop: 32 * scale, marginBottom: 12 * scale },
+    sectionHeader: { color: COLORS.silver, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1.5, marginTop: 32 * scale, marginBottom: 12 * scale },
 
-    listContainer: { paddingHorizontal: 24 * scale, gap: 12 * scale },
-    card: { backgroundColor: COLORS.white, borderRadius: 16, padding: 20 * scale, shadowColor: '#031E5D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, elevation: 2, borderWidth: 1, borderColor: '#f3f4f6' },
-    cardContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 * scale },
+    listContainer: { gap: 12 * scale, width: '100%' },
+    card: { backgroundColor: COLORS.white, borderRadius: 16, padding: 16 * scale, shadowColor: '#031E5D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, elevation: 2, borderWidth: 1, borderColor: '#f3f4f6' },
+    cardContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 * scale },
 
     avatar: { width: 44 * scale, height: 44 * scale, borderRadius: 22 * scale, backgroundColor: '#e5e7eb' },
     avatarPlaceholder: { width: 44 * scale, height: 44 * scale, borderRadius: 22 * scale, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
 
-    visitorName: { color: '#111827', fontSize: 16 * scale, fontWeight: 'bold', marginBottom: 8 * scale },
+    visitorName: { color: '#111827', fontSize: 16 * scale, fontWeight: 'bold', marginBottom: 4 * scale },
 
-    badgesRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 * scale },
-    badge: { paddingHorizontal: 10 * scale, paddingVertical: 4 * scale, borderRadius: 12, marginRight: 10 * scale },
+    badgesRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 * scale, gap: 4 * scale },
+    badge: { paddingHorizontal: 10 * scale, paddingVertical: 4 * scale, borderRadius: 12 },
     badgeProveedor: { backgroundColor: COLORS.royalBlueSoft },
     badgeTextProveedor: { color: COLORS.royalBlue, fontSize: 11 * scale, fontWeight: 'bold' },
     badgeFamiliar: { backgroundColor: COLORS.periwinkleSoft },
@@ -331,11 +332,11 @@ const createStyles = (scale) =>
     badgeTextPostulante: { color: COLORS.brandRed, fontSize: 11 * scale, fontWeight: 'bold' },
     folioText: { color: COLORS.silver, fontSize: 12 * scale, fontWeight: '600' },
 
-    locationRow: { flexDirection: 'row', alignItems: 'center' },
-    locationText: { color: '#6b7280', fontSize: 12 * scale, marginLeft: 4 * scale },
-    dateText: { color: '#c1c7d0', fontSize: 11 * scale, fontWeight: '600', marginTop: 6 * scale },
+    locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 * scale },
+    locationText: { color: '#6b7280', fontSize: 12 * scale, marginLeft: 4 * scale, flexShrink: 1 },
+    dateText: { color: '#c1c7d0', fontSize: 11 * scale, fontWeight: '600', marginTop: 4 * scale },
 
-    timesContainer: { alignItems: 'flex-end', justifyContent: 'center' },
+    timesContainer: { alignItems: 'flex-end', justifyContent: 'center', minWidth: 65 * scale },
     timeText: { color: COLORS.silver, fontSize: 13 * scale, fontWeight: '600', marginBottom: 6 * scale },
     timeValue: { color: COLORS.palatinateBlue, fontWeight: 'bold' },
     activeBadge: { backgroundColor: COLORS.royalBlueSoft, paddingHorizontal: 10 * scale, paddingVertical: 4 * scale, borderRadius: 8 },

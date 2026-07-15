@@ -42,14 +42,24 @@ const AREAS_POR_PISO = {
 };
 
 export default function AreaScreen() {
- const router = useRouter();
-  // Ahora que importaste useLocalSearchParams, esto funcionará:
+  const router = useRouter();
   const { pisoSeleccionado, proveedorPhoto, idPhoto } = useLocalSearchParams();
+  
+  // Extraemos las propiedades de adaptabilidad de tu hook useScale
   const { isLandscape, isTablet, contentWidth, scale } = useScale();
   const s = createStyles(scale);
 
   const [selectedArea, setSelectedArea] = useState(null);
   const areasDisponibles = AREAS_POR_PISO[pisoSeleccionado] || [];
+
+  // --- CÁLCULO DE COLUMNAS RESPONSIVAS ---
+  // Decidimos cuántas columnas usar según el dispositivo y orientación
+  const numColumns = isTablet ? (isLandscape ? 4 : 3) : (isLandscape ? 3 : 2);
+  const gapSize = 12 * scale;
+  
+  // Calculamos el ancho de cada tarjeta restando los espacios (gaps) del ancho total del contenedor
+  const totalGapsSpace = gapSize * (numColumns - 1);
+  const cardWidth = (contentWidth - totalGapsSpace) / numColumns;
 
   const handleContinue = () => {
     if (!selectedArea) return;
@@ -68,7 +78,7 @@ export default function AreaScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <View style={s.outerContainer}>
           <View style={[s.container, { width: contentWidth }]}>
             
@@ -81,7 +91,7 @@ export default function AreaScreen() {
               <Text style={s.stepTitle}>REGISTRO — PROVEEDOR</Text>
               <Text style={s.mainTitle}>Área</Text>
 
-              {/* Stepper Actualizado para el Paso 3 */}
+              {/* Stepper */}
               <View style={s.stepper}>
                 <View style={s.stepCompleted}>
                   <Ionicons name="checkmark" size={20 * scale} color="#ffffff" />
@@ -110,33 +120,45 @@ export default function AreaScreen() {
             {/* Body */}
             <View style={[s.bottomSection, (isLandscape || isTablet) && s.bottomSectionLandscape]}>
               
-              {/* Indicador del Piso Seleccionado */}
-              <View style={s.locationIndicator}>
-                <Ionicons name="location-outline" size={20 * scale} color={COLORS.royalBlue} />
-                <Text style={s.locationText}>{pisoSeleccionado || 'Piso no seleccionado'}</Text>
-              </View>
+              <View>
+                {/* Indicador del Piso Seleccionado */}
+                <View style={s.locationIndicator}>
+                  <Ionicons name="location-outline" size={20 * scale} color={COLORS.royalBlue} />
+                  <Text style={s.locationText}>{pisoSeleccionado || 'Piso no seleccionado'}</Text>
+                </View>
 
-              {/* Grid de Áreas */}
-              <View style={s.gridContainer}>
-                {areasDisponibles.map((area, index) => {
-                  const isSelected = selectedArea === area;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[s.card, isSelected && s.cardSelected]}
-                      activeOpacity={0.85}
-                      onPress={() => setSelectedArea(area)}
-                    >
-                      <Text style={[s.cardName, isSelected && s.textSelected]}>{area}</Text>
-                      
-                      {isSelected && (
-                        <View style={s.checkIconContainer}>
-                          <Ionicons name="checkmark" size={18 * scale} color={COLORS.royalBlue} />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                {/* Grid de Áreas Autoadaptable */}
+                <View style={[s.gridContainer, { gap: gapSize }]}>
+                  {areasDisponibles.map((area, index) => {
+                    const isSelected = selectedArea === area;
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          s.card, 
+                          { width: cardWidth }, // Aplicamos el ancho calculado dinámicamente
+                          isSelected && s.cardSelected
+                        ]}
+                        activeOpacity={0.85}
+                        onPress={() => setSelectedArea(area)}
+                      >
+                        <Text 
+                          style={[s.cardName, isSelected && s.textSelected]}
+                          numberOfLines={2} 
+                          adjustsFontSizeToFit // En iOS reducirá ligeramente el tamaño de la fuente si es muy largo
+                        >
+                          {area}
+                        </Text>
+                        
+                        {isSelected && (
+                          <View style={s.checkIconContainer}>
+                            <Ionicons name="checkmark" size={16 * scale} color={COLORS.royalBlue} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
 
               <TouchableOpacity
@@ -163,13 +185,13 @@ const createStyles = (scale) =>
 
     header: {
       backgroundColor: COLORS.palatinateBlue,
-      paddingHorizontal: 28 * scale,
+      paddingHorizontal: 24 * scale,
       paddingTop: Platform.OS === 'android' ? 40 : 20,
       paddingBottom: 28 * scale,
       borderBottomLeftRadius: 28,
       borderBottomRightRadius: 28,
     },
-    headerLandscape: { paddingHorizontal: 48 * scale },
+    headerLandscape: { paddingHorizontal: 32 * scale },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
     backText: { color: COLORS.periwinkle, fontSize: 15 * scale, marginLeft: 2 },
     stepTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
@@ -187,8 +209,9 @@ const createStyles = (scale) =>
     labelActive: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '600' },
     labelInactive: { color: COLORS.periwinkle, fontSize: 12 * scale },
 
-    bottomSection: { flex: 1, paddingHorizontal: 28 * scale, paddingTop: 24 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
-    bottomSectionLandscape: { paddingHorizontal: 48 * scale },
+    // Ajustado padding horizontal para ganar espacio en pantallas pequeñas
+    bottomSection: { flex: 1, paddingHorizontal: 16 * scale, paddingTop: 24 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
+    bottomSectionLandscape: { paddingHorizontal: 32 * scale },
 
     locationIndicator: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 * scale },
     locationText: { color: COLORS.royalBlue, fontSize: 15 * scale, fontWeight: 'bold', marginLeft: 6 },
@@ -196,15 +219,13 @@ const createStyles = (scale) =>
     gridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      gap: 12 * scale,
+      justifyContent: 'flex-start', // Cambio a flex-start para alineaciones perfectas con anchos calculados
       marginBottom: 32 * scale,
     },
     card: {
       backgroundColor: '#ffffff',
-      width: '48%',
-      paddingVertical: 20 * scale,
-      paddingHorizontal: 16 * scale,
+      paddingVertical: 18 * scale,
+      paddingHorizontal: 12 * scale,
       borderRadius: 16,
       borderWidth: 2,
       borderColor: 'transparent',
@@ -214,14 +235,20 @@ const createStyles = (scale) =>
       shadowRadius: 8,
       elevation: 2,
       justifyContent: 'center',
+      minHeight: 85 * scale, // Evita que tarjetas con textos cortos queden de menor altura que las de textos largos
     },
     cardSelected: {
       borderColor: COLORS.royalBlue,
       backgroundColor: COLORS.royalBlueSoft,
     },
-    cardName: { color: COLORS.palatinateBlue, fontSize: 14 * scale, fontWeight: '700' },
+    cardName: { 
+      color: COLORS.palatinateBlue, 
+      fontSize: 13 * scale, // Bajado ligeramente a 13 para prevenir cortes extremos
+      fontWeight: '700', 
+      textAlign: 'center' 
+    },
     textSelected: { color: COLORS.royalBlue },
-    checkIconContainer: { position: 'absolute', bottom: 12 * scale, right: 12 * scale },
+    checkIconContainer: { position: 'absolute', top: 6 * scale, right: 6 * scale }, // Movido arriba para dar más espacio al texto abajo
 
     continueButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center', marginTop: 10 },
     continueButtonDisabled: { backgroundColor: COLORS.silver },

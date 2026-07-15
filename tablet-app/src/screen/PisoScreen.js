@@ -25,7 +25,6 @@ const PISOS = [
 
 export default function PisoScreen() {
   const router = useRouter();
-  // Ahora que importaste useLocalSearchParams, esto funcionará:
   const { proveedorPhoto, idPhoto } = useLocalSearchParams(); 
   const { isLandscape, isTablet, contentWidth, scale } = useScale();
   const s = createStyles(scale);
@@ -44,11 +43,18 @@ export default function PisoScreen() {
     });
   };
 
+  // Determinar cuántas columnas usar según el dispositivo u orientación
+  const numColumns = (isLandscape || isTablet) ? 3 : 2;
+
   return (
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView 
+        contentContainerStyle={s.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         <View style={s.outerContainer}>
           <View style={[s.container, { width: contentWidth }]}>
             
@@ -61,7 +67,7 @@ export default function PisoScreen() {
               <Text style={s.stepTitle}>REGISTRO — PROVEEDOR</Text>
               <Text style={s.mainTitle}>Piso</Text>
 
-              {/* Stepper Actualizado para el Paso 2 */}
+              {/* Stepper */}
               <View style={s.stepper}>
                 <View style={s.stepCompleted}>
                   <Ionicons name="checkmark" size={20 * scale} color="#ffffff" />
@@ -79,6 +85,7 @@ export default function PisoScreen() {
                   <Text style={s.stepTextInactive}>4</Text>
                 </View>
               </View>
+              
               <View style={s.stepLabels}>
                 <Text style={s.labelInactive}>Fotos</Text>
                 <Text style={s.labelActive}>Piso</Text>
@@ -97,12 +104,18 @@ export default function PisoScreen() {
                   return (
                     <TouchableOpacity
                       key={piso.id}
-                      style={[s.card, isSelected && s.cardSelected]}
+                      style={[
+                        s.card, 
+                        { width: numColumns === 3 ? '31%' : '48%' }, 
+                        isSelected && s.cardSelected
+                      ]}
                       activeOpacity={0.85}
                       onPress={() => setSelectedPiso(piso)}
                     >
                       <Text style={[s.cardLabel, isSelected && s.textSelected]}>{piso.label}</Text>
-                      <Text style={[s.cardName, isSelected && s.textSelected]}>{piso.name}</Text>
+                      <Text style={[s.cardName, isSelected && s.textSelected]} numberOfLines={1} adjustsFontSizeToFit>
+                        {piso.name}
+                      </Text>
                       <Text style={[s.cardAreas, isSelected && s.textSelected]}>{piso.areas}</Text>
                       
                       {isSelected && (
@@ -124,6 +137,7 @@ export default function PisoScreen() {
                 <Text style={s.continueText}>Continuar</Text>
               </TouchableOpacity>
             </View>
+
           </View>
         </View>
       </ScrollView>
@@ -133,50 +147,146 @@ export default function PisoScreen() {
 
 const createStyles = (scale) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#f4f6f9' },
-    outerContainer: { flex: 1, alignItems: 'center' },
-    container: { flex: 1 },
+    safeArea: { 
+      flex: 1, 
+      backgroundColor: '#f4f6f9' 
+    },
+    scrollContainer: { 
+      flexGrow: 1 
+    },
+    outerContainer: { 
+      flex: 1, 
+      alignItems: 'center',
+      backgroundColor: '#f4f6f9'
+    },
+    container: { 
+      flex: 1,
+      justifyContent: 'space-between',
+    },
 
     header: {
       backgroundColor: COLORS.palatinateBlue,
       paddingHorizontal: 28 * scale,
-      paddingTop: Platform.OS === 'android' ? 40 : 20,
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20,
       paddingBottom: 28 * scale,
       borderBottomLeftRadius: 28,
       borderBottomRightRadius: 28,
     },
-    headerLandscape: { paddingHorizontal: 48 * scale },
-    backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
-    backText: { color: COLORS.periwinkle, fontSize: 15 * scale, marginLeft: 2 },
-    stepTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
-    mainTitle: { color: COLORS.white, fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
+    headerLandscape: { 
+      paddingHorizontal: 48 * scale,
+      paddingTop: 20
+    },
+    backButton: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      marginBottom: 16 * scale 
+    },
+    backText: { 
+      color: COLORS.periwinkle, 
+      fontSize: 15 * scale, 
+      marginLeft: 2 
+    },
+    stepTitle: { 
+      color: COLORS.royalBlue, 
+      fontSize: 12 * scale, 
+      fontWeight: '700', 
+      letterSpacing: 1.5 
+    },
+    mainTitle: { 
+      color: COLORS.white, 
+      fontSize: 28 * scale, 
+      fontWeight: 'bold', 
+      marginTop: 6 
+    },
 
-    stepper: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 * scale },
-    stepCompleted: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepActive: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepInactive: { borderColor: 'rgba(255,255,255,0.25)', borderWidth: 2, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
-    stepTextActive: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 * scale },
-    stepTextInactive: { color: COLORS.periwinkle, fontWeight: 'bold', fontSize: 14 * scale },
-    stepLine: { width: 32 * scale, height: 2, backgroundColor: 'rgba(255,255,255,0.2)' },
-    stepLineActive: { width: 32 * scale, height: 2, backgroundColor: COLORS.royalBlue },
-    stepLabels: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 26 * scale },
-    labelActive: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '600' },
-    labelInactive: { color: COLORS.periwinkle, fontSize: 12 * scale },
+    stepper: { 
+      flexDirection: 'row', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      marginTop: 24 * scale 
+    },
+    stepCompleted: { 
+      backgroundColor: COLORS.royalBlue, 
+      width: 36 * scale, 
+      height: 36 * scale, 
+      borderRadius: 18 * scale, 
+      justifyContent: 'center', 
+      alignItems: 'center' 
+    },
+    stepActive: { 
+      backgroundColor: COLORS.royalBlue, 
+      width: 36 * scale, 
+      height: 36 * scale, 
+      borderRadius: 18 * scale, 
+      justifyContent: 'center', 
+      alignItems: 'center' 
+    },
+    stepInactive: { 
+      borderColor: 'rgba(255,255,255,0.25)', 
+      borderWidth: 2, 
+      width: 36 * scale, 
+      height: 36 * scale, 
+      borderRadius: 18 * scale, 
+      justifyContent: 'center', 
+      alignItems: 'center' 
+    },
+    stepTextActive: { 
+      color: COLORS.white, 
+      fontWeight: 'bold', 
+      fontSize: 14 * scale 
+    },
+    stepTextInactive: { 
+      color: COLORS.periwinkle, 
+      fontWeight: 'bold', 
+      fontSize: 14 * scale 
+    },
+    stepLine: { 
+      width: 32 * scale, 
+      height: 2, 
+      backgroundColor: 'rgba(255,255,255,0.2)' 
+    },
+    stepLineActive: { 
+      width: 32 * scale, 
+      height: 2, 
+      backgroundColor: COLORS.royalBlue 
+    },
+    stepLabels: { 
+      flexDirection: 'row', 
+      justifyContent: 'center', 
+      marginTop: 8, 
+      gap: 26 * scale 
+    },
+    labelActive: { 
+      color: COLORS.royalBlue, 
+      fontSize: 12 * scale, 
+      fontWeight: '600' 
+    },
+    labelInactive: { 
+      color: COLORS.periwinkle, 
+      fontSize: 12 * scale 
+    },
 
-    bottomSection: { flex: 1, paddingHorizontal: 28 * scale, paddingTop: 28 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
-    bottomSectionLandscape: { paddingHorizontal: 48 * scale },
+    bottomSection: { 
+      flex: 1, 
+      paddingHorizontal: 28 * scale, 
+      paddingTop: 28 * scale, 
+      paddingBottom: 24 * scale, 
+      justifyContent: 'space-between' 
+    },
+    bottomSectionLandscape: { 
+      paddingHorizontal: 48 * scale 
+    },
 
     gridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'space-between',
-      gap: 16 * scale,
+      gap: 12 * scale,
       marginBottom: 32 * scale,
     },
     card: {
       backgroundColor: '#ffffff',
-      width: '47%', // 2 columnas
-      padding: 20 * scale,
+      padding: 16 * scale,
       borderRadius: 16,
       borderWidth: 2,
       borderColor: 'transparent',
@@ -191,13 +301,44 @@ const createStyles = (scale) =>
       borderColor: COLORS.royalBlue,
       backgroundColor: COLORS.royalBlueSoft,
     },
-    cardLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', marginBottom: 8 * scale },
-    cardName: { color: COLORS.palatinateBlue, fontSize: 18 * scale, fontWeight: 'bold', marginBottom: 4 * scale },
-    cardAreas: { color: '#6b7280', fontSize: 13 * scale },
-    textSelected: { color: COLORS.royalBlue },
-    checkIconContainer: { position: 'absolute', bottom: 16 * scale, right: 16 * scale },
+    cardLabel: { 
+      color: '#9ca3af', 
+      fontSize: 12 * scale, 
+      fontWeight: 'bold', 
+      marginBottom: 6 * scale 
+    },
+    cardName: { 
+      color: COLORS.palatinateBlue, 
+      fontSize: 17 * scale, 
+      fontWeight: 'bold', 
+      marginBottom: 4 * scale 
+    },
+    cardAreas: { 
+      color: '#6b7280', 
+      fontSize: 13 * scale 
+    },
+    textSelected: { 
+      color: COLORS.royalBlue 
+    },
+    checkIconContainer: { 
+      position: 'absolute', 
+      bottom: 12 * scale, 
+      right: 12 * scale 
+    },
 
-    continueButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center' },
-    continueButtonDisabled: { backgroundColor: COLORS.silver },
-    continueText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
+    continueButton: { 
+      backgroundColor: COLORS.royalBlue, 
+      padding: 18 * scale, 
+      borderRadius: 16, 
+      alignItems: 'center',
+      width: '100%',
+    },
+    continueButtonDisabled: { 
+      backgroundColor: COLORS.silver 
+    },
+    continueText: { 
+      color: COLORS.white, 
+      fontSize: 17 * scale, 
+      fontWeight: 'bold' 
+    },
   });

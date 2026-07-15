@@ -56,10 +56,12 @@ export default function DatosScreen() {
     }, 300);
   };
 
+  // CAMBIO: Se limpia la entrada para que solo acepte letras mientras escribe la empresa
   const handleEmpresaChange = (text) => {
-    setEmpresa(text);
+    const limpio = sanitizeName(text);
+    setEmpresa(limpio);
     setShowEmpresaSuggestions(true);
-    buscarEmpresas(text);
+    buscarEmpresas(limpio);
     if (errors.empresa) setErrors((prev) => ({ ...prev, empresa: undefined }));
   };
 
@@ -85,77 +87,77 @@ export default function DatosScreen() {
     return Object.keys(next).length === 0;
   };
 
-const handleRegister = async () => {
-  if (!validate()) return;
-  setIsLoading(true);
+  const handleRegister = async () => {
+    if (!validate()) return;
+    setIsLoading(true);
 
-  try {
-    const formData = new FormData();
-    formData.append('pisoSeleccionado', pisoSeleccionado);
-    formData.append('areaSeleccionada', areaSeleccionada);
-    formData.append('empresa', empresa);
-    formData.append('representante', representante);
-    formData.append('motivo', motivo);
-    formData.append('contacto', contacto);
+    try {
+      const formData = new FormData();
+      formData.append('pisoSeleccionado', pisoSeleccionado);
+      formData.append('areaSeleccionada', areaSeleccionada);
+      formData.append('empresa', empresa);
+      formData.append('representante', representante);
+      formData.append('motivo', motivo);
+      formData.append('contacto', contacto);
 
-    console.log('Plataforma detectada:', Platform.OS); // 👈 agrega esto también
-    console.log('proveedorPhoto:', proveedorPhoto);
+      console.log('Plataforma detectada:', Platform.OS);
+      console.log('proveedorPhoto:', proveedorPhoto);
 
-    if (proveedorPhoto) {
-      if (Platform.OS === 'web') {
-        const blob = await fetch(proveedorPhoto).then(r => r.blob());
-        console.log('Blob generado, tamaño:', blob.size); // 👈 y esto
-        formData.append('foto_persona', blob, 'proveedor.jpg');
-      } else {
-        formData.append('foto_persona', {
-          uri: proveedorPhoto,
-          name: 'proveedor.jpg',
-          type: 'image/jpeg',
-        });
+      if (proveedorPhoto) {
+        if (Platform.OS === 'web') {
+          const blob = await fetch(proveedorPhoto).then(r => r.blob());
+          console.log('Blob generado, tamaño:', blob.size);
+          formData.append('foto_persona', blob, 'proveedor.jpg');
+        } else {
+          formData.append('foto_persona', {
+            uri: proveedorPhoto,
+            name: 'proveedor.jpg',
+            type: 'image/jpeg',
+          });
+        }
       }
-    }
 
-    if (idPhoto) {
-      if (Platform.OS === 'web') {
-        const blob = await fetch(idPhoto).then(r => r.blob());
-        formData.append('foto_ine', blob, 'ine.jpg');
-      } else {
-        formData.append('foto_ine', {
-          uri: idPhoto,
-          name: 'ine.jpg',
-          type: 'image/jpeg',
-        });
+      if (idPhoto) {
+        if (Platform.OS === 'web') {
+          const blob = await fetch(idPhoto).then(r => r.blob());
+          formData.append('foto_ine', blob, 'ine.jpg');
+        } else {
+          formData.append('foto_ine', {
+            uri: idPhoto,
+            name: 'ine.jpg',
+            type: 'image/jpeg',
+          });
+        }
       }
-    }
 
-    const response = await fetch(`${API_URL}/api/proveedores`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      router.push({
-        pathname: '/proveedor-exito',
-        params: {
-          pisoSeleccionado,
-          areaSeleccionada,
-          empresa,
-          representante,
-          folio: data.folio,
-        },
+      const response = await fetch(`${API_URL}/api/proveedores`, {
+        method: 'POST',
+        body: formData,
       });
-    } else {
-      Alert.alert('Error', data.mensaje || 'Error al registrar.');
+
+      const data = await response.json();
+
+      if (response.ok) {
+        router.push({
+          pathname: '/proveedor-exito',
+          params: {
+            pisoSeleccionado,
+            areaSeleccionada,
+            empresa,
+            representante,
+            folio: data.folio,
+          },
+        });
+      } else {
+        Alert.alert('Error', data.mensaje || 'Error al registrar.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'No hay conexión con el servidor.');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error(error);
-    Alert.alert('Error', 'No hay conexión con el servidor.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const renderInput = (id, label, placeholder, value, setValue, nameOnly = false) => (
     <View style={s.inputContainer}>
@@ -255,8 +257,16 @@ const handleRegister = async () => {
                       autoCapitalize="words"
                       editable={!isLoading}
                     />
+                    {/* CAMBIO: Agregado la fila informativa de letras para el Autocomplete de Empresa */}
+                    {!errors.empresa ? (
+                      <View style={s.hintRow}>
+                        <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
+                        <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
+                      </View>
+                    ) : null}
                     {errors.empresa ? <Text style={s.errorText}>{errors.empresa}</Text> : null}
                   </View>
+                  
                   {renderInput('representante', 'REPRESENTANTE *', 'Nombre completo del representante', representante, setRepresentante, true)}
                   {renderInput('motivo', 'MOTIVO DE VISITA *', 'Descripción del motivo', motivo, setMotivo)}
                   {renderInput('contacto', 'PERSONA DE CONTACTO *', 'Nombre del contacto interno', contacto, setContacto, true)}

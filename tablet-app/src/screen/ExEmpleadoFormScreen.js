@@ -157,7 +157,7 @@ export default function ExEmpleadoFormScreen() {
 
   const renderCaptureBox = (field, photo, label) => (
     <TouchableOpacity
-      style={[s.captureBox, useRowLayout && s.captureBoxRow, photo && s.captureBoxFilled]}
+      style={[s.captureBox, photo && s.captureBoxFilled]}
       activeOpacity={0.85}
       onPress={() => capturePhoto(field)}
       disabled={loadingField === field || isLoading}
@@ -184,7 +184,10 @@ export default function ExEmpleadoFormScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={s.outerContainer}>
             <View style={[s.container, { width: contentWidth }]}>
@@ -203,64 +206,69 @@ export default function ExEmpleadoFormScreen() {
                 <Text style={s.headerTitle}>Registro Ex Empleado</Text>
               </View>
 
-              {/* Body */}
-              <View style={s.bottomSection}>
+              {/* Body Responsivo (Una o dos columnas según la pantalla) */}
+              <View style={[s.bottomSection, useRowLayout && s.bottomSectionRow]}>
                 
-                {/* Fotografía de la persona */}
-                <Text style={s.sectionLabel}>FOTOGRAFÍAS</Text>
-                <View style={[s.captureContainer, useRowLayout && s.captureContainerRow]}>
-                  {renderCaptureBox('persona', fotoPersona, 'Foto del Ex Empleado *')}
-                  {renderCaptureBox('id', fotoId, 'Identificación (opcional)')}
-                </View>
-                {photoError ? <Text style={s.errorText}>{photoError}</Text> : null}
-
-                {/* Formulario */}
-                <View style={s.inputWrapper}>
-                  <Text style={s.inputLabel}>NOMBRE COMPLETO *</Text>
-                  <TextInput
-                    style={[s.textInput, focusedInput === 'nombre' && s.textInputFocused, errors.nombre && s.textInputError]}
-                    placeholder="Nombre y apellidos"
-                    placeholderTextColor="#9ca3af"
-                    value={nombre}
-                    onChangeText={(text) => {
-                      setNombre(sanitizeName(text)); 
-                      if (errors.nombre) setErrors((prev) => ({ ...prev, nombre: undefined }));
-                    }}
-                    onFocus={() => setFocusedInput('nombre')}
-                    onBlur={() => setFocusedInput(null)}
-                    autoCapitalize="words"
-                    editable={!isLoading}
-                  />
-                  {!errors.nombre ? (
-                    <View style={s.hintRow}>
-                      <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
-                      <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
-                    </View>
-                  ) : null}
-                  {errors.nombre ? <Text style={s.errorText}>{errors.nombre}</Text> : null}
-                </View>
-
-                {/* Tarjeta Informativa del Motivo */}
-                <View style={s.exEmpleadoCard}>
-                  <Text style={s.exEmpleadoTitle}>MOTIVO DE LA VISITA (PREDETERMINADO)</Text>
-                  <View style={s.exEmpleadoRow}>
-                    <Ionicons name="document-text-outline" size={20 * scale} color={COLORS.royalBlue} />
-                    <Text style={s.exEmpleadoSubtitle}>Firma de Finiquito Administrativo</Text>
+                {/* COLUMNA IZQUIERDA: Fotos */}
+                <View style={[useRowLayout ? s.columnLeft : null]}>
+                  <Text style={s.sectionLabel}>FOTOGRAFÍAS</Text>
+                  <View style={[s.captureContainer, useRowLayout && s.captureContainerRow]}>
+                    {renderCaptureBox('persona', fotoPersona, 'Foto del Ex Empleado *')}
+                    {renderCaptureBox('id', fotoId, 'Identificación (opcional)')}
                   </View>
+                  {photoError ? <Text style={s.errorText}>{photoError}</Text> : null}
                 </View>
 
-                {/* Botón Final (Registrar Entrada) */}
-                <TouchableOpacity
-                  style={[s.registerButton, isLoading && s.registerButtonDisabled]}
-                  onPress={handleRegister}
-                  disabled={isLoading}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.registerText}>
-                    {isLoading ? 'Guardando...' : 'Registrar Entrada'}
-                  </Text>
-                  {!isLoading && <Ionicons name="checkmark" size={20 * scale} color="#ffffff" style={{marginLeft: 8}} />}
-                </TouchableOpacity>
+                {/* COLUMNA DERECHA: Formulario e Información */}
+                <View style={[useRowLayout ? s.columnRight : null]}>
+                  {/* Formulario */}
+                  <View style={s.inputWrapper}>
+                    <Text style={s.inputLabel}>NOMBRE COMPLETO *</Text>
+                    <TextInput
+                      style={[s.textInput, focusedInput === 'nombre' && s.textInputFocused, errors.nombre && s.textInputError]}
+                      placeholder="Nombre y apellidos"
+                      placeholderTextColor="#9ca3af"
+                      value={nombre}
+                      onChangeText={(text) => {
+                        setNombre(sanitizeName(text)); 
+                        if (errors.nombre) setErrors((prev) => ({ ...prev, nombre: undefined }));
+                      }}
+                      onFocus={() => setFocusedInput('nombre')}
+                      onBlur={() => setFocusedInput(null)}
+                      autoCapitalize="words"
+                      editable={!isLoading}
+                    />
+                    {!errors.nombre ? (
+                      <View style={s.hintRow}>
+                        <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
+                        <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
+                      </View>
+                    ) : null}
+                    {errors.nombre ? <Text style={s.errorText}>{errors.nombre}</Text> : null}
+                  </View>
+
+                  {/* Tarjeta Informativa del Motivo */}
+                  <View style={s.exEmpleadoCard}>
+                    <Text style={s.exEmpleadoTitle}>MOTIVO DE LA VISITA (PREDETERMINADO)</Text>
+                    <View style={s.exEmpleadoRow}>
+                      <Ionicons name="document-text-outline" size={20 * scale} color={COLORS.royalBlue} />
+                      <Text style={s.exEmpleadoSubtitle}>Firma de Finiquito Administrativo</Text>
+                    </View>
+                  </View>
+
+                  {/* Botón Final (Registrar Entrada) */}
+                  <TouchableOpacity
+                    style={[s.registerButton, isLoading && s.registerButtonDisabled]}
+                    onPress={handleRegister}
+                    disabled={isLoading}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={s.registerText}>
+                      {isLoading ? 'Guardando...' : 'Registrar Entrada'}
+                    </Text>
+                    {!isLoading && <Ionicons name="checkmark" size={20 * scale} color="#ffffff" style={{marginLeft: 8}} />}
+                  </TouchableOpacity>
+                </View>
 
               </View>
             </View>
@@ -288,20 +296,28 @@ const createStyles = (scale) =>
     headerSubtitle: { color: COLORS.periwinkle, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
     headerTitle: { color: '#ffffff', fontSize: 26 * scale, fontWeight: 'bold' },
 
+    // Grid responsivo para la sección principal
     bottomSection: { paddingHorizontal: 24 * scale, paddingTop: 24 * scale, paddingBottom: 40 * scale },
+    bottomSectionRow: { flexDirection: 'row', gap: 32 * scale, alignItems: 'flex-start' },
+    
+    // Columnas fluidas para tablet / web
+    columnLeft: { flex: 1.1 },
+    columnRight: { flex: 1.3, marginTop: 16 }, // El margin-top alinea el label "Fotografías" con el primer campo en horizontal
+
     sectionLabel: { color: '#6b7280', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, marginBottom: 12 * scale },
     
+    // Caja de captura adaptable
     captureContainer: { gap: 16 * scale, marginBottom: 24 * scale },
     captureContainerRow: { flexDirection: 'row' },
     captureBox: {
-      aspectRatio: 1.5, 
+      flex: 1, // Permite que tome el espacio correspondiente fluidamente
+      aspectRatio: 1.3, 
       borderWidth: 2, borderColor: '#d1d5db', borderStyle: 'dashed', borderRadius: 16,
       justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb', overflow: 'hidden',
     },
     captureBoxFilled: { borderStyle: 'solid', borderColor: COLORS.royalBlue },
-    captureBoxRow: { flex: 1 },
     cameraIconCircle: { width: 50 * scale, height: 50 * scale, borderRadius: 14, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', marginBottom: 8 * scale },
-    captureLabel: { color: '#6b7280', fontSize: 13 * scale, fontWeight: '600' },
+    captureLabel: { color: '#6b7280', fontSize: 13 * scale, fontWeight: '600', textAlign: 'center', paddingHorizontal: 8 },
     capturedImage: { width: '100%', height: '100%' },
     checkBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: COLORS.royalBlue, padding: 4, borderRadius: 12 },
 

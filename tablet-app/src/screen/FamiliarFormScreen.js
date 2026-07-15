@@ -144,7 +144,7 @@ export default function FamiliarFormScreen() {
           });
         }
       }
-  
+
       if (fotoId) {
         if (Platform.OS === 'web') {
           const blob = await fetch(fotoId).then(r => r.blob());
@@ -265,7 +265,7 @@ export default function FamiliarFormScreen() {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={s.scrollContainer} keyboardShouldPersistTaps="handled">
           <View style={s.outerContainer}>
             <View style={[s.container, { width: contentWidth }]}>
               
@@ -342,8 +342,9 @@ export default function FamiliarFormScreen() {
 const createStyles = (scale) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f4f6f9' },
-    outerContainer: { flex: 1, alignItems: 'center' },
-    container: { flex: 1 },
+    outerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    container: { alignSelf: 'center' },
+    scrollContainer: { flexGrow: 1 },
 
     header: {
       backgroundColor: COLORS.palatinateBlue,
@@ -352,8 +353,8 @@ const createStyles = (scale) =>
       paddingBottom: 24 * scale,
     },
     headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 * scale },
-    iconButton: { backgroundColor: 'rgba(255, 255, 255, 0.15)', width: 44 * scale, height: 44 * scale, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    headerSubtitle: { color: COLORS.periwinkle, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
+    iconButton: { backgroundColor: 'rgba(255, 255, 255, 0.15)', width: 44 * scale, height: 44 * scale, borderRadius: 12 * scale, alignItems: 'center', justifyContent: 'center' },
+    headerSubtitle: { color: COLORS.periwinkle, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 * scale },
     headerTitle: { color: COLORS.white, fontSize: 26 * scale, fontWeight: 'bold' },
 
     bottomSection: { paddingHorizontal: 24 * scale, paddingTop: 24 * scale, paddingBottom: 40 * scale },
@@ -364,30 +365,30 @@ const createStyles = (scale) =>
     captureContainerRow: { flexDirection: 'row' },
     captureBox: {
       aspectRatio: 1.5,
-      borderWidth: 2, borderColor: '#d1d5db', borderStyle: 'dashed', borderRadius: 16,
+      borderWidth: 2, borderColor: '#d1d5db', borderStyle: 'dashed', borderRadius: 16 * scale,
       justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb', overflow: 'hidden',
     },
     captureBoxFilled: { borderStyle: 'solid', borderColor: COLORS.royalBlue },
     captureBoxRow: { flex: 1 },
-    cameraIconCircle: { width: 50 * scale, height: 50 * scale, borderRadius: 14, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', marginBottom: 8 * scale },
+    cameraIconCircle: { width: 50 * scale, height: 50 * scale, borderRadius: 14 * scale, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', marginBottom: 8 * scale },
     captureLabel: { color: '#6b7280', fontSize: 13 * scale, fontWeight: '600' },
     capturedImage: { width: '100%', height: '100%' },
-    checkBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: COLORS.royalBlue, padding: 4, borderRadius: 12 },
+    checkBadge: { position: 'absolute', top: 10 * scale, right: 10 * scale, backgroundColor: COLORS.royalBlue, padding: 4 * scale, borderRadius: 12 * scale },
 
     inputWrapper: { marginBottom: 20 * scale },
     inputLabel: { color: '#4b5563', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, marginBottom: 8 * scale },
-    textInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, fontSize: 15 * scale, color: '#111827' },
+    textInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12 * scale, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, fontSize: 15 * scale, color: '#111827' },
     textInputFocused: { borderColor: COLORS.royalBlue, backgroundColor: '#ffffff', borderWidth: 2 },
     textInputError: { borderColor: COLORS.brandRed },
     errorText: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: '600', marginTop: 6 * scale },
-    hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 * scale },
+    hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4 * scale, marginTop: 6 * scale },
     hintText: { color: COLORS.silver, fontSize: 11 * scale, fontStyle: 'italic' },
 
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 * scale },
     chip: {
       paddingHorizontal: 16 * scale,
       paddingVertical: 10 * scale,
-      borderRadius: 12,
+      borderRadius: 12 * scale,
       backgroundColor: '#ffffff',
       borderWidth: 1,
       borderColor: '#d1d5db',
@@ -396,11 +397,11 @@ const createStyles = (scale) =>
     chipText: { color: '#4b5563', fontSize: 14 * scale, fontWeight: '600' },
     chipTextSelected: { color: COLORS.white },
 
-    pacienteCard: { backgroundColor: COLORS.royalBlueSoft, padding: 16 * scale, borderRadius: 12, marginBottom: 20 * scale, marginTop: 10 * scale },
+    pacienteCard: { backgroundColor: COLORS.royalBlueSoft, padding: 16 * scale, borderRadius: 12 * scale, marginBottom: 20 * scale, marginTop: 10 * scale },
     pacienteTitle: { color: COLORS.palatinateBlue, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
-    pacienteSubtitle: { color: COLORS.royalBlue, fontSize: 14 * scale, marginTop: 4 },
+    pacienteSubtitle: { color: COLORS.royalBlue, fontSize: 14 * scale, marginTop: 4 * scale },
 
-    registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 * scale },
+    registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16 * scale, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 * scale },
     registerButtonDisabled: { backgroundColor: COLORS.silver },
     registerText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
   });

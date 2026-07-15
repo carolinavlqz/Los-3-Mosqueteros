@@ -30,6 +30,12 @@ export default function CheckOutScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // --- CONFIGURACIÓN RESPONSIVA DE TARJETAS ---
+  // En tablets o modo horizontal organizamos la lista en 2 columnas
+  const useGrid = isTablet || isLandscape;
+  const gapSize = 16 * scale;
+  const cardWidth = useGrid ? (contentWidth - gapSize) / 2 : '100%';
+
   const cargarActivos = useCallback(async (options = {}) => {
     const { silent = false } = options;
     if (!silent) setLoading(true);
@@ -52,7 +58,6 @@ export default function CheckOutScreen() {
     cargarActivos();
   }, [cargarActivos]);
 
-  // Refresca en segundo plano cada 5s mientras la pantalla está en foco.
   useFocusEffect(
     useCallback(() => {
       const interval = setInterval(() => cargarActivos({ silent: true }), 5000);
@@ -115,11 +120,10 @@ export default function CheckOutScreen() {
         end={{ x: 1, y: 1 }}
         style={s.header}
       >
-        {/* Detalles decorativos tipo "glow" */}
         <View style={s.glowCircleTop} pointerEvents="none" />
         <View style={s.glowCircleBottom} pointerEvents="none" />
 
-        <View style={[s.headerContentContainer, (isLandscape || isTablet) && s.headerLandscape]}>
+        <View style={[s.headerContentContainer, { width: contentWidth }]}>
           <View style={s.headerTopRow}>
             <TouchableOpacity onPress={() => router.back()} style={s.iconButton}>
               <Ionicons name="chevron-back" size={22 * scale} color={COLORS.white} />
@@ -132,11 +136,12 @@ export default function CheckOutScreen() {
           <Text style={s.headerTitle}>Registrar Salida</Text>
         </View>
       </LinearGradient>
-      {/* ===== FIN HEADER ===== */}
 
+      {/* ===== CUERPO DE LA PANTALLA ===== */}
       <View style={s.outerContainer}>
         <View style={[s.container, { width: contentWidth }]}>
 
+          {/* Buscador acoplado al ancho responsivo */}
           <View style={s.searchContainer}>
             <Ionicons name="search-outline" size={20 * scale} color={COLORS.silver} />
             <TextInput
@@ -148,53 +153,73 @@ export default function CheckOutScreen() {
             />
           </View>
 
-          <Text style={s.resultsCount}>VISITAS ACTIVAS HOY — {filteredVisitors.length} REGISTROS</Text>
+          <Text style={s.resultsCount}>
+            VISITAS ACTIVAS HOY — {filteredVisitors.length} REGISTROS
+          </Text>
 
-          <ScrollView contentContainerStyle={s.listContainer}>
+          <ScrollView 
+            contentContainerStyle={s.listContainer}
+            showsVerticalScrollIndicator={false}
+          >
             {loading && (
               <Text style={s.emptyText}>Cargando visitas...</Text>
             )}
 
-            {!loading && filteredVisitors.map((v) => {
-              const isCheckedOut = v.estado === 'salida';
-              return (
-                <View key={v.id} style={[s.card, isCheckedOut && s.cardCheckedOut]}>
+            {!loading && (
+              <View style={[s.grid, useGrid && s.gridRow]}>
+                {filteredVisitors.map((v) => {
+                  const isCheckedOut = v.estado === 'salida';
+                  return (
+                    <View 
+                      key={v.id} 
+                      style={[
+                        s.card, 
+                        { width: cardWidth }, // Ancho dinámico calculado
+                        isCheckedOut && s.cardCheckedOut
+                      ]}
+                    >
+                      <View style={s.cardContent}>
+                        <View style={s.cardHeader}>
+                          <Text style={s.visitorName} numberOfLines={1}>{v.nombre}</Text>
+                          <View style={s.timeContainer}>
+                            <Text style={s.timeText}>{v.hora}</Text>
+                            <Text style={s.timePeriod}>entrada</Text>
+                          </View>
+                        </View>
 
-                  <View style={s.cardHeader}>
-                    <Text style={s.visitorName}>{v.nombre}</Text>
-                    <View style={s.timeContainer}>
-                      <Text style={s.timeText}>{v.hora}</Text>
-                      <Text style={s.timePeriod}>entrada</Text>
+                        <View style={s.badgesRow}>
+                          <View style={[s.badge, getBadgeStyle(v.tipo)]}>
+                            <Text style={[s.badgeText, getBadgeTextStyle(v.tipo)]}>{v.tipo}</Text>
+                          </View>
+                          <Text style={s.folioText}>{v.folio}</Text>
+                        </View>
+
+                        <View style={s.locationRow}>
+                          <Ionicons name="location-outline" size={16 * scale} color={COLORS.silver} />
+                          <Text style={s.locationText} numberOfLines={1}>{v.destino}</Text>
+                        </View>
+                      </View>
+
+                      {isCheckedOut ? (
+                        <View style={s.checkedOutStatus}>
+                          <Ionicons name="checkmark" size={20 * scale} color={COLORS.palatinateBlue} />
+                          <Text style={s.checkedOutText}>Salida registrada</Text>
+                        </View>
+                      ) : (
+                        <TouchableOpacity 
+                          style={s.checkOutButton} 
+                          activeOpacity={0.85} 
+                          onPress={() => handleCheckOut(v.id)}
+                        >
+                          <Ionicons name="log-out-outline" size={20 * scale} color={COLORS.white} style={{ marginRight: 8 }} />
+                          <Text style={s.checkOutButtonText}>Registrar Salida</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
-                  </View>
-
-                  <View style={s.badgesRow}>
-                    <View style={[s.badge, getBadgeStyle(v.tipo)]}>
-                      <Text style={[s.badgeText, getBadgeTextStyle(v.tipo)]}>{v.tipo}</Text>
-                    </View>
-                    <Text style={s.folioText}>{v.folio}</Text>
-                  </View>
-
-                  <View style={s.locationRow}>
-                    <Ionicons name="location-outline" size={16 * scale} color={COLORS.silver} />
-                    <Text style={s.locationText}>{v.destino}</Text>
-                  </View>
-
-                  {isCheckedOut ? (
-                    <View style={s.checkedOutStatus}>
-                      <Ionicons name="checkmark" size={20 * scale} color={COLORS.palatinateBlue} />
-                      <Text style={s.checkedOutText}>Salida registrada</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity style={s.checkOutButton} activeOpacity={0.85} onPress={() => handleCheckOut(v.id)}>
-                      <Ionicons name="log-out-outline" size={20 * scale} color={COLORS.white} style={{ marginRight: 8 }} />
-                      <Text style={s.checkOutButtonText}>Registrar Salida</Text>
-                    </TouchableOpacity>
-                  )}
-
-                </View>
-              );
-            })}
+                  );
+                })}
+              </View>
+            )}
 
             {!loading && filteredVisitors.length === 0 && (
               <Text style={s.emptyText}>No hay visitas activas en este momento.</Text>
@@ -221,16 +246,12 @@ const createStyles = (scale) =>
       overflow: 'hidden',
     },
     headerContentContainer: { 
-      width: '100%', 
-      maxWidth: 760,
-      paddingHorizontal: 28 * scale, 
+      paddingHorizontal: 20 * scale, 
       paddingTop: Platform.OS === 'android' ? 40 : 20, 
       paddingBottom: 24 * scale 
     },
-    headerLandscape: { paddingHorizontal: 48 * scale },
     headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 * scale },
     
-    // Detalles Glow del Header
     glowCircleTop: {
       position: 'absolute',
       top: -40,
@@ -238,7 +259,7 @@ const createStyles = (scale) =>
       width: 140,
       height: 140,
       borderRadius: 70,
-      backgroundColor: 'rgba(219,24,48,0.16)', // Toque del brandRed
+      backgroundColor: 'rgba(219,24,48,0.16)',
     },
     glowCircleBottom: {
       position: 'absolute',
@@ -247,7 +268,7 @@ const createStyles = (scale) =>
       width: 160,
       height: 160,
       borderRadius: 80,
-      backgroundColor: 'rgba(184,199,238,0.10)', // Toque del periwinkle
+      backgroundColor: 'rgba(184,199,238,0.10)',
     },
 
     iconButton: { 
@@ -279,41 +300,92 @@ const createStyles = (scale) =>
       textShadowRadius: 4, 
     },
 
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, marginHorizontal: 24 * scale, marginTop: 24 * scale, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, borderRadius: 14, borderWidth: 1, borderColor: '#E5E9F2' },
+    searchContainer: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      backgroundColor: COLORS.white, 
+      marginHorizontal: 16 * scale, 
+      marginTop: 24 * scale, 
+      paddingHorizontal: 16 * scale, 
+      paddingVertical: 12 * scale, 
+      borderRadius: 14, 
+      borderWidth: 1, 
+      borderColor: '#E5E9F2' 
+    },
     searchInput: { flex: 1, marginLeft: 10 * scale, fontSize: 16 * scale, color: COLORS.palatinateBlue },
 
-    resultsCount: { color: COLORS.silver, fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, marginHorizontal: 24 * scale, marginTop: 24 * scale, marginBottom: 16 * scale },
+    resultsCount: { 
+      color: COLORS.silver, 
+      fontSize: 12 * scale, 
+      fontWeight: 'bold', 
+      letterSpacing: 1, 
+      marginHorizontal: 16 * scale, 
+      marginTop: 20 * scale, 
+      marginBottom: 12 * scale 
+    },
 
-    listContainer: { paddingHorizontal: 24 * scale, paddingBottom: 40 * scale, gap: 16 * scale },
+    listContainer: { 
+      paddingHorizontal: 16 * scale, 
+      paddingBottom: 40 * scale 
+    },
 
-    card: { backgroundColor: COLORS.white, borderRadius: 16, padding: 20 * scale, shadowColor: COLORS.palatinateBlue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#F0F2F8' },
+    // --- SISTEMA GRID ---
+    grid: {
+      flexDirection: 'column',
+      gap: 16 * scale,
+    },
+    gridRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+
+    card: { 
+      backgroundColor: COLORS.white, 
+      borderRadius: 16, 
+      padding: 18 * scale, 
+      shadowColor: COLORS.palatinateBlue, 
+      shadowOffset: { width: 0, height: 4 }, 
+      shadowOpacity: 0.08, 
+      shadowRadius: 8, 
+      elevation: 2, 
+      borderWidth: 1, 
+      borderColor: '#F0F2F8',
+      justifyContent: 'space-between', // Separa el contenido del botón de check-out abajo
+      minHeight: 180 * scale // Mantiene la uniformidad de altura de tarjetas en grid
+    },
     cardCheckedOut: { borderColor: COLORS.periwinkle, backgroundColor: '#F3F6FD' },
+    cardContent: { flex: 1 },
 
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 * scale },
-    visitorName: { color: COLORS.palatinateBlue, fontSize: 18 * scale, fontWeight: 'bold', flex: 1 },
+    visitorName: { color: COLORS.palatinateBlue, fontSize: 17 * scale, fontWeight: 'bold', flex: 1, marginRight: 8 },
     timeContainer: { alignItems: 'flex-end' },
-    timeText: { color: COLORS.palatinateBlue, fontSize: 18 * scale, fontWeight: '900' },
-    timePeriod: { color: COLORS.silver, fontSize: 12 * scale, fontWeight: '600' },
+    timeText: { color: COLORS.palatinateBlue, fontSize: 16 * scale, fontWeight: '900' },
+    timePeriod: { color: COLORS.silver, fontSize: 11 * scale, fontWeight: '600', marginTop: -2 },
 
     badgesRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 * scale },
     badge: { paddingHorizontal: 10 * scale, paddingVertical: 4 * scale, borderRadius: 12, marginRight: 10 * scale },
-    // Proveedor -> Royal Blue
     badgeProveedor: { backgroundColor: '#E7EDFC' },
     badgeTextProveedor: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: 'bold' },
-    // Familiar -> Light Periwinkle
     badgeFamiliar: { backgroundColor: '#EDF1FB' },
     badgeTextFamiliar: { color: COLORS.palatinateBlue, fontSize: 12 * scale, fontWeight: 'bold' },
-    // Postulante -> Rojo de marca
     badgePostulante: { backgroundColor: '#FBE7EA' },
     badgeTextPostulante: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: 'bold' },
     folioText: { color: COLORS.silver, fontSize: 13 * scale, fontWeight: '600' },
 
-    locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 * scale },
-    locationText: { color: '#5B6B85', fontSize: 13 * scale, marginLeft: 6 * scale },
+    locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
+    locationText: { color: '#5B6B85', fontSize: 13 * scale, marginLeft: 6 * scale, flex: 1 },
 
-    checkOutButton: { backgroundColor: COLORS.royalBlue, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 14 * scale, borderRadius: 12 },
-    checkOutButtonText: { color: COLORS.white, fontSize: 16 * scale, fontWeight: 'bold' },
-    checkedOutStatus: { flexDirection: 'row', alignItems: 'center' },
-    checkedOutText: { color: COLORS.palatinateBlue, fontSize: 15 * scale, fontWeight: 'bold', marginLeft: 8 * scale },
-    emptyText: { textAlign: 'center', color: COLORS.silver, marginTop: 20 * scale, fontSize: 14 * scale },
+    checkOutButton: { 
+      backgroundColor: COLORS.royalBlue, 
+      flexDirection: 'row', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      paddingVertical: 12 * scale, 
+      borderRadius: 12,
+      marginTop: 'auto' // Empuja el botón al final de la tarjeta
+    },
+    checkOutButtonText: { color: COLORS.white, fontSize: 15 * scale, fontWeight: 'bold' },
+    checkedOutStatus: { flexDirection: 'row', alignItems: 'center', marginTop: 'auto' },
+    checkedOutText: { color: COLORS.palatinateBlue, fontSize: 14 * scale, fontWeight: 'bold', marginLeft: 8 * scale },
+    emptyText: { textAlign: 'center', color: COLORS.silver, marginTop: 40 * scale, fontSize: 15 * scale },
   });

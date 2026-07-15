@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   Image,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,24 +20,25 @@ const MAX_CONTENT_WIDTH_PHONE = 480;
 const MAX_CONTENT_WIDTH_TABLET = 600;
 
 function useScale() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
+  const isLandscape = width > height;
 
+  // Calculamos el ancho ideal basándonos en la orientación y tipo de dispositivo
   const contentWidth = isTablet
-    ? Math.min(width * 0.7, MAX_CONTENT_WIDTH_TABLET)
-    : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
+    ? Math.min(width * (isLandscape ? 0.6 : 0.85), MAX_CONTENT_WIDTH_TABLET)
+    : Math.min(width * 0.9, MAX_CONTENT_WIDTH_PHONE);
 
   const rawScale = contentWidth / BASE_WIDTH;
-  const scale = Math.max(0.85, Math.min(rawScale, 1.25));
+  const scale = Math.max(0.85, Math.min(rawScale, 1.2));
 
-  return { contentWidth, scale };
+  return { contentWidth, scale, isLandscape, isTablet };
 }
 
 export default function PostulanteExitoScreen() {
   const router = useRouter();
-  // Se añade "tipoCita" a los parámetros recibidos
   const { nombre, puesto, tipoCita, folio: folioParam } = useLocalSearchParams();
-  const { contentWidth, scale } = useScale();
+  const { contentWidth, scale, isLandscape, isTablet } = useScale();
   const s = createStyles(scale);
 
   const [folio, setFolio] = useState('');
@@ -44,18 +46,19 @@ export default function PostulanteExitoScreen() {
   const [fecha, setFecha] = useState('');
 
   useEffect(() => {
-    // Si la API ya nos regresó un folio en la pantalla anterior, lo usamos; si no, generamos el fallback temporal.
     setFolio(folioParam || `MIA-${Math.floor(1000 + Math.random() * 9000)}`);
 
     const now = new Date();
-    // Hora
+    // Obtener Hora formateada
     let h = now.getHours();
     let m = now.getMinutes();
     const ampm = h >= 12 ? 'p.m.' : 'a.m.';
-    h = h % 12; h = h ? h : 12; m = m < 10 ? '0' + m : m;
+    h = h % 12; 
+    h = h ? h : 12; 
+    m = m < 10 ? '0' + m : m;
     setHora(`${h}:${m} ${ampm}`);
 
-    // Fecha
+    // Obtener Fecha formateada
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     setFecha(now.toLocaleDateString('es-MX', options));
   }, [folioParam]);
@@ -65,7 +68,13 @@ export default function PostulanteExitoScreen() {
   const renderRow = (label, value, isHighlighted = false) => (
     <View style={s.row}>
       <Text style={s.rowLabel}>{label}</Text>
-      <Text style={[s.rowValue, isHighlighted && s.rowValueBlue]}>{value}</Text>
+      <Text 
+        style={[s.rowValue, isHighlighted && s.rowValueBlue]}
+        numberOfLines={2}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
     </View>
   );
 
@@ -73,7 +82,11 @@ export default function PostulanteExitoScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#f0f4f8" />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingVertical: 20 }}>
+      <ScrollView 
+        contentContainerStyle={s.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         <View style={s.outerContainer}>
           <View style={[s.container, { width: contentWidth }]}>
             
@@ -99,11 +112,11 @@ export default function PostulanteExitoScreen() {
               <View style={s.ticketHeader}>
                 <View style={s.ticketHeaderCol}>
                   <Text style={s.ticketLabelLight}>FOLIO</Text>
-                  <Text style={s.ticketValueBig}>{folio}</Text>
+                  <Text style={s.ticketValueBig} numberOfLines={1} adjustsFontSizeToFit>{folio}</Text>
                 </View>
                 <View style={[s.ticketHeaderCol, { alignItems: 'flex-end' }]}>
                   <Text style={s.ticketLabelLight}>HORA</Text>
-                  <Text style={s.ticketValueBig}>{hora}</Text>
+                  <Text style={s.ticketValueBig} numberOfLines={1} adjustsFontSizeToFit>{hora}</Text>
                 </View>
               </View>
 
@@ -112,7 +125,6 @@ export default function PostulanteExitoScreen() {
                 <View style={s.divider} />
                 {renderRow('PUESTO', puesto || 'N/A')}
                 <View style={s.divider} />
-                {/* Nuevo campo: Tipo de Cita */}
                 {renderRow('TIPO DE CITA', tipoCita || 'No especificado')}
                 <View style={s.divider} />
                 {renderRow('FECHA', fecha)}
@@ -125,7 +137,7 @@ export default function PostulanteExitoScreen() {
 
             {/* Botón Volver */}
             <TouchableOpacity style={s.homeButton} onPress={handleFinish} activeOpacity={0.85}>
-              <Ionicons name="home-outline" size={20 * scale} color="#ffffff" style={{marginRight: 8}} />
+              <Ionicons name="home-outline" size={20 * scale} color="#ffffff" style={{ marginRight: 8 * scale }} />
               <Text style={s.homeButtonText}>Volver al Inicio</Text>
             </TouchableOpacity>
 
@@ -138,36 +150,142 @@ export default function PostulanteExitoScreen() {
 
 const createStyles = (scale) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#f0f4f8' }, 
-    outerContainer: { flex: 1, alignItems: 'center' },
-    container: { flex: 1, paddingHorizontal: 20 * scale },
+    safeArea: { 
+      flex: 1, 
+      backgroundColor: '#f0f4f8' 
+    }, 
+    scrollContainer: { 
+      flexGrow: 1,
+      paddingVertical: 24 * scale
+    },
+    outerContainer: { 
+      flex: 1, 
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    container: { 
+      alignItems: 'stretch',
+    },
 
     logoImage: {
       width: '100%',
-      height: 80 * scale,
+      height: 70 * scale,
       resizeMode: 'contain',
-      marginBottom: 30 * scale,
+      marginBottom: 20 * scale,
     },
 
-    iconContainer: { alignItems: 'center', marginBottom: 20 * scale },
-    checkCircle: { width: 80 * scale, height: 80 * scale, borderRadius: 40 * scale, backgroundColor: '#284b82', justifyContent: 'center', alignItems: 'center', shadowColor: '#284b82', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 },
+    iconContainer: { 
+      alignItems: 'center', 
+      marginBottom: 16 * scale 
+    },
+    checkCircle: { 
+      width: 76 * scale, 
+      height: 76 * scale, 
+      borderRadius: 38 * scale, 
+      backgroundColor: '#284b82', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      shadowColor: '#284b82', 
+      shadowOffset: { width: 0, height: 8 }, 
+      shadowOpacity: 0.25, 
+      shadowRadius: 12, 
+      elevation: 6 
+    },
     
-    title: { color: '#284b82', fontSize: 26 * scale, fontWeight: '900', textAlign: 'center', marginBottom: 10 * scale },
-    subtitle: { color: '#4b5563', fontSize: 15 * scale, textAlign: 'center', lineHeight: 22 * scale, paddingHorizontal: 20 * scale, marginBottom: 40 * scale },
+    title: { 
+      color: '#284b82', 
+      fontSize: 24 * scale, 
+      fontWeight: '950', 
+      textAlign: 'center', 
+      marginBottom: 8 * scale 
+    },
+    subtitle: { 
+      color: '#4b5563', 
+      fontSize: 14 * scale, 
+      textAlign: 'center', 
+      lineHeight: 20 * scale, 
+      paddingHorizontal: 16 * scale, 
+      marginBottom: 28 * scale 
+    },
 
-    ticketCard: { backgroundColor: '#ffffff', borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 5, marginBottom: 30 * scale, overflow: 'hidden' },
-    ticketHeader: { backgroundColor: '#284b82', flexDirection: 'row', justifyContent: 'space-between', padding: 24 * scale },
-    ticketHeaderCol: { flex: 1 },
-    ticketLabelLight: { color: '#8ba4c9', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 * scale },
-    ticketValueBig: { color: '#ffffff', fontSize: 22 * scale, fontWeight: 'bold' },
+    ticketCard: { 
+      backgroundColor: '#ffffff', 
+      borderRadius: 20, 
+      shadowColor: '#000', 
+      shadowOffset: { width: 0, height: 4 }, 
+      shadowOpacity: 0.04, 
+      shadowRadius: 12, 
+      elevation: 4, 
+      marginBottom: 24 * scale, 
+      overflow: 'hidden' 
+    },
+    ticketHeader: { 
+      backgroundColor: '#284b82', 
+      flexDirection: 'row', 
+      justifyContent: 'space-between', 
+      padding: 20 * scale 
+    },
+    ticketHeaderCol: { 
+      flex: 1 
+    },
+    ticketLabelLight: { 
+      color: '#8ba4c9', 
+      fontSize: 11 * scale, 
+      fontWeight: 'bold', 
+      letterSpacing: 1, 
+      marginBottom: 4 * scale 
+    },
+    ticketValueBig: { 
+      color: '#ffffff', 
+      fontSize: 20 * scale, 
+      fontWeight: 'bold' 
+    },
     
-    ticketBody: { padding: 24 * scale },
-    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { color: '#9ca3af', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1, flex: 0.35 },
-    rowValue: { color: '#111827', fontSize: 14 * scale, fontWeight: '600', flex: 0.65, textAlign: 'right' },
-    rowValueBlue: { color: '#0284c7', fontWeight: 'bold' },
-    divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: 16 * scale },
+    ticketBody: { 
+      padding: 20 * scale 
+    },
+    row: { 
+      flexDirection: 'row', 
+      justifyContent: 'space-between', 
+      alignItems: 'center',
+      gap: 12
+    },
+    rowLabel: { 
+      color: '#9ca3af', 
+      fontSize: 11 * scale, 
+      fontWeight: 'bold', 
+      letterSpacing: 0.8, 
+      width: '35%'
+    },
+    rowValue: { 
+      color: '#111827', 
+      fontSize: 13 * scale, 
+      fontWeight: '600', 
+      width: '60%', 
+      textAlign: 'right' 
+    },
+    rowValueBlue: { 
+      color: '#0284c7', 
+      fontWeight: 'bold' 
+    },
+    divider: { 
+      height: 1, 
+      backgroundColor: '#f3f4f6', 
+      marginVertical: 12 * scale 
+    },
 
-    homeButton: { backgroundColor: '#284b82', flexDirection: 'row', padding: 20 * scale, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-    homeButtonText: { color: '#ffffff', fontSize: 17 * scale, fontWeight: 'bold' },
+    homeButton: { 
+      backgroundColor: '#284b82', 
+      flexDirection: 'row', 
+      padding: 16 * scale, 
+      borderRadius: 16, 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      marginTop: 8 * scale
+    },
+    homeButtonText: { 
+      color: '#ffffff', 
+      fontSize: 16 * scale, 
+      fontWeight: 'bold' 
+    },
   });

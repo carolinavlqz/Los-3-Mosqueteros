@@ -42,6 +42,12 @@ export default function DatosScreen() {
   const [showEmpresaSuggestions, setShowEmpresaSuggestions] = useState(false);
   const empresaDebounceRef = useRef(null);
 
+  // --- CONFIGURACIÓN RESPONSIVA DEL FORMULARIO ---
+  // Dividimos en 2 columnas en tablets u orientación horizontal para optimizar el espacio
+  const useTwoColumns = isTablet || isLandscape;
+  const gapSize = 16 * scale;
+  const itemWidth = useTwoColumns ? (contentWidth - gapSize) / 2 : '100%';
+
   const buscarEmpresas = (texto) => {
     if (empresaDebounceRef.current) clearTimeout(empresaDebounceRef.current);
     if (!texto.trim()) {
@@ -56,7 +62,6 @@ export default function DatosScreen() {
     }, 300);
   };
 
-  // CAMBIO: Se limpia la entrada para que solo acepte letras mientras escribe la empresa
   const handleEmpresaChange = (text) => {
     const limpio = sanitizeName(text);
     setEmpresa(limpio);
@@ -73,7 +78,6 @@ export default function DatosScreen() {
 
   const handleEmpresaBlur = () => {
     setFocusedInput(null);
-    // Retraso para que el tap en una sugerencia registre antes de ocultar la lista.
     setTimeout(() => setShowEmpresaSuggestions(false), 150);
   };
 
@@ -100,13 +104,9 @@ export default function DatosScreen() {
       formData.append('motivo', motivo);
       formData.append('contacto', contacto);
 
-      console.log('Plataforma detectada:', Platform.OS);
-      console.log('proveedorPhoto:', proveedorPhoto);
-
       if (proveedorPhoto) {
         if (Platform.OS === 'web') {
           const blob = await fetch(proveedorPhoto).then(r => r.blob());
-          console.log('Blob generado, tamaño:', blob.size);
           formData.append('foto_persona', blob, 'proveedor.jpg');
         } else {
           formData.append('foto_persona', {
@@ -160,7 +160,7 @@ export default function DatosScreen() {
   };
 
   const renderInput = (id, label, placeholder, value, setValue, nameOnly = false) => (
-    <View style={s.inputContainer}>
+    <View style={[s.inputContainer, { width: itemWidth }]}>
       <Text style={s.inputLabel}>{label}</Text>
       <TextInput
         style={[s.textInput, focusedInput === id && s.textInputFocused, errors[id] && s.textInputError]}
@@ -179,7 +179,7 @@ export default function DatosScreen() {
       {nameOnly && !errors[id] ? (
         <View style={s.hintRow}>
           <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
-          <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
+          <Text style={s.hintText}>Solo letras, sin números</Text>
         </View>
       ) : null}
       {errors[id] ? <Text style={s.errorText}>{errors[id]}</Text> : null}
@@ -193,7 +193,8 @@ export default function DatosScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={s.outerContainer}>
             <View style={[s.container, { width: contentWidth }]}>
-              {/* Header */}
+              
+              {/* Header Responsivo */}
               <View style={[s.header, (isLandscape || isTablet) && s.headerLandscape]}>
                 <TouchableOpacity onPress={() => router.back()} style={s.backButton} disabled={isLoading}>
                   <Ionicons name="chevron-back" size={22 * scale} color={COLORS.periwinkle} />
@@ -228,18 +229,22 @@ export default function DatosScreen() {
                 </View>
               </View>
 
-              {/* Body */}
+              {/* Body Responsivo */}
               <View style={[s.bottomSection, (isLandscape || isTablet) && s.bottomSectionLandscape]}>
+                
                 <View style={s.locationCard}>
                   <Ionicons name="location" size={24 * scale} color={COLORS.royalBlue} />
-                  <View style={{ marginLeft: 12 * scale }}>
+                  <View style={{ marginLeft: 12 * scale, flex: 1 }}>
                     <Text style={s.locationTitle}>Ubicación seleccionada</Text>
                     <Text style={s.locationSubtitle}>{pisoSeleccionado} — {areaSeleccionada}</Text>
                   </View>
                 </View>
 
-                <View style={s.formContainer}>
-                  <View style={s.inputContainer}>
+                {/* Formulario que cambia a Grid si detecta tablet o landscape */}
+                <View style={[s.formContainer, useTwoColumns && s.formContainerGrid]}>
+                  
+                  {/* Bloque Empresa (Ancho dinámico) */}
+                  <View style={[s.inputContainer, { width: itemWidth }]}>
                     <Text style={s.inputLabel}>EMPRESA / PROVEEDOR *</Text>
                     <AutocompleteInput
                       scale={scale}
@@ -257,31 +262,34 @@ export default function DatosScreen() {
                       autoCapitalize="words"
                       editable={!isLoading}
                     />
-                    {/* CAMBIO: Agregado la fila informativa de letras para el Autocomplete de Empresa */}
                     {!errors.empresa ? (
                       <View style={s.hintRow}>
                         <Ionicons name="information-circle-outline" size={13 * scale} color={COLORS.silver} />
-                        <Text style={s.hintText}>Solo letras, sin números ni caracteres especiales</Text>
+                        <Text style={s.hintText}>Solo letras, sin números</Text>
                       </View>
                     ) : null}
                     {errors.empresa ? <Text style={s.errorText}>{errors.empresa}</Text> : null}
                   </View>
                   
-                  {renderInput('representante', 'REPRESENTANTE *', 'Nombre completo del representante', representante, setRepresentante, true)}
+                  {renderInput('representante', 'REPRESENTANTE *', 'Nombre completo', representante, setRepresentante, true)}
                   {renderInput('motivo', 'MOTIVO DE VISITA *', 'Descripción del motivo', motivo, setMotivo)}
                   {renderInput('contacto', 'PERSONA DE CONTACTO *', 'Nombre del contacto interno', contacto, setContacto, true)}
                 </View>
 
-                <TouchableOpacity
-                  style={[s.registerButton, isLoading && s.registerButtonDisabled]}
-                  onPress={handleRegister}
-                  disabled={isLoading}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.registerText}>
-                    {isLoading ? 'Guardando...' : 'Registrar Entrada'}
-                  </Text>
-                </TouchableOpacity>
+                {/* Botón de Enviar acoplado de forma óptima */}
+                <View style={s.buttonWrapper}>
+                  <TouchableOpacity
+                    style={[s.registerButton, isLoading && s.registerButtonDisabled]}
+                    onPress={handleRegister}
+                    disabled={isLoading}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={s.registerText}>
+                      {isLoading ? 'Guardando...' : 'Registrar Entrada'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
               </View>
             </View>
           </View>
@@ -296,12 +304,22 @@ const createStyles = (scale) =>
     safeArea: { flex: 1, backgroundColor: '#f4f6f9' },
     outerContainer: { flex: 1, alignItems: 'center' },
     container: { flex: 1 },
-    header: { backgroundColor: COLORS.palatinateBlue, paddingHorizontal: 28 * scale, paddingTop: Platform.OS === 'android' ? 40 : 20, paddingBottom: 28 * scale, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+    
+    header: { 
+      backgroundColor: COLORS.palatinateBlue, 
+      paddingHorizontal: 28 * scale, 
+      paddingTop: Platform.OS === 'android' ? 40 : 20, 
+      paddingBottom: 28 * scale, 
+      borderBottomLeftRadius: 28, 
+      borderBottomRightRadius: 28 
+    },
     headerLandscape: { paddingHorizontal: 48 * scale },
+    
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * scale },
     backText: { color: COLORS.periwinkle, fontSize: 15 * scale, marginLeft: 2 },
     stepTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5 },
     mainTitle: { color: COLORS.white, fontSize: 28 * scale, fontWeight: 'bold', marginTop: 6 },
+    
     stepper: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24 * scale },
     stepCompleted: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
     stepActive: { backgroundColor: COLORS.royalBlue, width: 36 * scale, height: 36 * scale, borderRadius: 18 * scale, justifyContent: 'center', alignItems: 'center' },
@@ -313,21 +331,37 @@ const createStyles = (scale) =>
     stepLabels: { flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 26 * scale },
     labelActive: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '600' },
     labelInactive: { color: COLORS.periwinkle, fontSize: 12 * scale },
+    
     bottomSection: { flex: 1, paddingHorizontal: 28 * scale, paddingTop: 24 * scale, paddingBottom: 24 * scale, justifyContent: 'space-between' },
     bottomSectionLandscape: { paddingHorizontal: 48 * scale },
+    
     locationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.royalBlueSoft, padding: 16 * scale, borderRadius: 16, marginBottom: 24 * scale },
     locationTitle: { color: COLORS.royalBlue, fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1 },
     locationSubtitle: { color: COLORS.palatinateBlue, fontSize: 16 * scale, fontWeight: 'bold', marginTop: 2 },
-    formContainer: { gap: 20 * scale, marginBottom: 32 * scale },
+    
+    // --- ESTILO DE FORMULARIO RESPONSIVO (FLEX-WRAP) ---
+    formContainer: { 
+      flexDirection: 'column', 
+      gap: 20 * scale, 
+      marginBottom: 32 * scale 
+    },
+    formContainerGrid: { 
+      flexDirection: 'row', 
+      flexWrap: 'wrap', 
+      justifyContent: 'space-between' 
+    },
+    
     inputContainer: { gap: 8 * scale },
     inputLabel: { color: '#6b7280', fontSize: 12 * scale, fontWeight: 'bold', letterSpacing: 1 },
     textInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16 * scale, paddingVertical: 14 * scale, fontSize: 16 * scale, color: '#111827' },
     textInputFocused: { borderColor: COLORS.royalBlue, backgroundColor: '#ffffff' },
     textInputError: { borderColor: COLORS.brandRed },
     errorText: { color: COLORS.brandRed, fontSize: 12 * scale, fontWeight: '600', marginTop: 6 * scale },
-    hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 * scale },
+    hintRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 * scale },
     hintText: { color: COLORS.silver, fontSize: 11 * scale, fontStyle: 'italic' },
-    registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center' },
+    
+    buttonWrapper: { width: '100%', alignItems: 'center', marginTop: 8 * scale },
+    registerButton: { backgroundColor: COLORS.royalBlue, padding: 18 * scale, borderRadius: 16, alignItems: 'center', width: '100%' },
     registerButtonDisabled: { backgroundColor: COLORS.silver },
     registerText: { color: COLORS.white, fontSize: 17 * scale, fontWeight: 'bold' },
   });

@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 const BASE_WIDTH = 375;
 const TABLET_BREAKPOINT = 600;
 const MAX_CONTENT_WIDTH_PHONE = 480;
-const MAX_CONTENT_WIDTH_TABLET = 900; // Aumentado ligeramente para acomodar 3 tarjetas de forma óptima
+const MAX_CONTENT_WIDTH_TABLET = 950; // Ajustado óptimamente para contener las 3 tarjetas de lado a lado
 
 function useScale() {
   const { width, height } = useWindowDimensions();
@@ -28,9 +28,9 @@ function useScale() {
     : Math.min(width, MAX_CONTENT_WIDTH_PHONE);
 
   const rawScale = contentWidth / BASE_WIDTH;
-  const scale = Math.max(0.85, Math.min(rawScale, 1.2));
+  const scale = Math.max(0.85, Math.min(rawScale, 1.15));
 
-  // Las cajas van en fila si hay espacio suficiente
+  // Las tarjetas van en fila (lado a lado) si hay espacio suficiente
   const useRowLayout = isTablet || isLandscape;
 
   return { isLandscape, isTablet, contentWidth, scale, useRowLayout };
@@ -38,7 +38,7 @@ function useScale() {
 
 export default function TipoVisitaScreen() {
   const router = useRouter();
-  const { contentWidth, scale, useRowLayout } = useScale();
+  const { isLandscape, isTablet, contentWidth, scale, useRowLayout } = useScale();
   const s = createStyles(scale);
 
   // Componente para las "píldoras" o tags de requerimientos
@@ -67,15 +67,18 @@ export default function TipoVisitaScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#1a355b" />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView 
+        contentContainerStyle={s.scrollContainer} 
+        showsVerticalScrollIndicator={false}
+      >
         <View style={s.outerContainer}>
           <View style={[s.container, { width: contentWidth }]}>
             
             {/* Header */}
-            <View style={s.header}>
+            <View style={[s.header, (isLandscape || isTablet) && s.headerLandscape]}>
               <View style={s.headerTopRow}>
                 <TouchableOpacity onPress={() => router.back()} style={s.iconButton}>
-                  <Ionicons name="chevron-back" size={24 * scale} color="#ffffff" />
+                  <Ionicons name="chevron-back" size={22 * scale} color="#ffffff" />
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => router.push('/')} style={s.iconButton}>
@@ -88,7 +91,7 @@ export default function TipoVisitaScreen() {
             </View>
 
             {/* Body */}
-            <View style={s.bottomSection}>
+            <View style={[s.bottomSection, (isLandscape || isTablet) && s.bottomSectionLandscape]}>
               <Text style={s.instructionText}>
                 Selecciona la categoría de la persona visitante.
               </Text>
@@ -104,7 +107,7 @@ export default function TipoVisitaScreen() {
                   <View style={[s.cardHeaderBg, { backgroundColor: '#f0f4f8' }]}>
                     <View style={s.cardHeaderContent}>
                       <View style={[s.iconBox, { backgroundColor: '#1e3a68' }]}>
-                        <Ionicons name="heart-outline" size={32 * scale} color="#ffffff" />
+                        <Ionicons name="heart-outline" size={30 * scale} color="#ffffff" />
                       </View>
                       <View style={s.cardTitleContainer}>
                         <Text style={[s.cardTitle, { color: '#1e3a68' }]}>Familiar</Text>
@@ -134,7 +137,7 @@ export default function TipoVisitaScreen() {
                   <View style={[s.cardHeaderBg, { backgroundColor: '#fef3c7' }]}>
                     <View style={s.cardHeaderContent}>
                       <View style={[s.iconBox, { backgroundColor: '#d97706' }]}>
-                        <Ionicons name="briefcase-outline" size={32 * scale} color="#ffffff" />
+                        <Ionicons name="briefcase-outline" size={30 * scale} color="#ffffff" />
                       </View>
                       <View style={s.cardTitleContainer}>
                         <Text style={[s.cardTitle, { color: '#92400e' }]}>Postulante</Text>
@@ -155,7 +158,7 @@ export default function TipoVisitaScreen() {
                   </View>
                 </TouchableOpacity>
 
-                {/* TARJETA 3: EX EMPLEADO (NUEVA) */}
+                {/* TARJETA 3: EX EMPLEADO */}
                 <TouchableOpacity 
                   style={[s.card, useRowLayout && s.cardRow]} 
                   activeOpacity={0.9}
@@ -164,7 +167,7 @@ export default function TipoVisitaScreen() {
                   <View style={[s.cardHeaderBg, { backgroundColor: '#fee2e2' }]}>
                     <View style={s.cardHeaderContent}>
                       <View style={[s.iconBox, { backgroundColor: '#ef4444' }]}>
-                        <Ionicons name="person-remove-outline" size={32 * scale} color="#ffffff" />
+                        <Ionicons name="person-remove-outline" size={30 * scale} color="#ffffff" />
                       </View>
                       <View style={s.cardTitleContainer}>
                         <Text style={[s.cardTitle, { color: '#991b1b' }]}>Ex Empleado</Text>
@@ -180,7 +183,7 @@ export default function TipoVisitaScreen() {
                     <View style={s.tagsContainer}>
                       <RequirementTag text="Foto" theme="ex-empleado" />
                       <RequirementTag text="Identificación" theme="ex-empleado" />
-                      <RequirementTag text="Finiquito (Fijo)" theme="ex-empleado" />
+                      <RequirementTag text="Finiquito" theme="ex-empleado" />
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -196,21 +199,39 @@ export default function TipoVisitaScreen() {
 
 const createStyles = (scale) =>
   StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#f4f6f9' },
-    outerContainer: { flex: 1, alignItems: 'center' },
-    container: { flex: 1 },
+    safeArea: { 
+      flex: 1, 
+      backgroundColor: '#f4f6f9' 
+    },
+    scrollContainer: { 
+      flexGrow: 1 
+    },
+    outerContainer: { 
+      flex: 1, 
+      alignItems: 'center',
+      backgroundColor: '#f4f6f9'
+    },
+    container: { 
+      flex: 1 
+    },
 
     header: {
       backgroundColor: '#1a355b',
       paddingHorizontal: 28 * scale,
-      paddingTop: Platform.OS === 'android' ? 40 : 20,
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 20,
       paddingBottom: 28 * scale,
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
+    },
+    headerLandscape: {
+      paddingHorizontal: 48 * scale,
+      paddingTop: 20
     },
     headerTopRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 24 * scale,
+      marginBottom: 20 * scale,
     },
     iconButton: {
       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -220,14 +241,42 @@ const createStyles = (scale) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    headerSubtitle: { color: '#8ba4c9', fontSize: 12 * scale, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
-    headerTitle: { color: '#ffffff', fontSize: 26 * scale, fontWeight: 'bold' },
+    headerSubtitle: { 
+      color: '#8ba4c9', 
+      fontSize: 12 * scale, 
+      fontWeight: '700', 
+      letterSpacing: 1.5, 
+      marginBottom: 4 
+    },
+    headerTitle: { 
+      color: '#ffffff', 
+      fontSize: 26 * scale, 
+      fontWeight: 'bold' 
+    },
 
-    bottomSection: { flex: 1, paddingHorizontal: 24 * scale, paddingTop: 24 * scale, paddingBottom: 32 * scale },
-    instructionText: { color: '#4b5563', fontSize: 16 * scale, marginBottom: 24 * scale },
+    bottomSection: { 
+      flex: 1, 
+      paddingHorizontal: 24 * scale, 
+      paddingTop: 24 * scale, 
+      paddingBottom: 40 * scale 
+    },
+    bottomSectionLandscape: {
+      paddingHorizontal: 48 * scale
+    },
+    instructionText: { 
+      color: '#4b5563', 
+      fontSize: 15 * scale, 
+      marginBottom: 24 * scale,
+      lineHeight: 22 * scale 
+    },
 
-    cardsContainer: { gap: 20 * scale },
-    cardsContainerRow: { flexDirection: 'row', alignItems: 'stretch' },
+    cardsContainer: { 
+      gap: 16 * scale 
+    },
+    cardsContainerRow: { 
+      flexDirection: 'row', 
+      alignItems: 'stretch' 
+    },
 
     card: {
       backgroundColor: '#ffffff',
@@ -239,35 +288,74 @@ const createStyles = (scale) =>
       elevation: 3,
       overflow: 'hidden',
     },
-    cardRow: { flex: 1 },
+    cardRow: { 
+      flex: 1 
+    },
 
-    cardHeaderBg: { padding: 20 * scale, borderBottomWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
-    cardHeaderContent: { flexDirection: 'row', alignItems: 'center' },
+    cardHeaderBg: { 
+      padding: 18 * scale, 
+      borderBottomWidth: 1, 
+      borderColor: 'rgba(0,0,0,0.05)' 
+    },
+    cardHeaderContent: { 
+      flexDirection: 'row', 
+      alignItems: 'center' 
+    },
     iconBox: {
-      width: 56 * scale,
-      height: 56 * scale,
+      width: 54 * scale,
+      height: 54 * scale,
       borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 16 * scale,
     },
-    cardTitleContainer: { flex: 1 },
-    cardTitle: { fontSize: 22 * scale, fontWeight: 'bold', marginBottom: 4 },
-    cardSubtitle: { fontSize: 13 * scale, fontWeight: '600' },
+    cardTitleContainer: { 
+      flex: 1 
+    },
+    cardTitle: { 
+      fontSize: 20 * scale, 
+      fontWeight: 'bold', 
+      marginBottom: 2 * scale 
+    },
+    cardSubtitle: { 
+      fontSize: 12 * scale, 
+      fontWeight: '600' 
+    },
 
-    cardBody: { padding: 20 * scale },
-    cardDescription: { color: '#6b7280', fontSize: 14 * scale, lineHeight: 22 * scale, marginBottom: 20 * scale },
+    cardBody: { 
+      padding: 18 * scale,
+      flex: 1,
+      justifyContent: 'space-between'
+    },
+    cardDescription: { 
+      color: '#6b7280', 
+      fontSize: 13.5 * scale, 
+      lineHeight: 20 * scale, 
+      marginBottom: 16 * scale 
+    },
     
-    tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 * scale },
-    tag: { paddingHorizontal: 12 * scale, paddingVertical: 6 * scale, borderRadius: 20 },
+    tagsContainer: { 
+      flexDirection: 'row', 
+      flexWrap: 'wrap', 
+      gap: 8 * scale 
+    },
+    tag: { 
+      paddingHorizontal: 10 * scale, 
+      paddingVertical: 5 * scale, 
+      borderRadius: 20 
+    },
+    tagText: {
+      fontSize: 11 * scale, 
+      fontWeight: 'bold'
+    },
     
     // Temas para las píldoras
     tagFamiliarBg: { backgroundColor: '#e0e7ff' },
-    tagFamiliarText: { color: '#3730a3', fontSize: 12 * scale, fontWeight: 'bold' },
+    tagFamiliarText: { color: '#3730a3' },
     
     tagPostulanteBg: { backgroundColor: '#fef3c7' },
-    tagPostulanteText: { color: '#92400e', fontSize: 12 * scale, fontWeight: 'bold' },
+    tagPostulanteText: { color: '#92400e' },
 
     tagExEmpleadoBg: { backgroundColor: '#fee2e2' },
-    tagExEmpleadoText: { color: '#991b1b', fontSize: 12 * scale, fontWeight: 'bold' },
+    tagExEmpleadoText: { color: '#991b1b' },
   });

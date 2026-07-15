@@ -63,7 +63,6 @@ export default function HomeScreen() {
     <SafeAreaView style={s.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.palatinateBlue} />
 
-      {/* ScrollView opcional para pantallas muy pequeñas en horizontal que requieran un mínimo de scroll */}
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }} 
         bounces={false} 
@@ -191,7 +190,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
-    </</SafeAreaView>
+    </SafeAreaView>
   );
 }
 
@@ -201,7 +200,6 @@ const createStyles = (scale) =>
     outerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     container: { flex: 1 },
     
-    // Divide la pantalla en dos columnas iguales si está en modo horizontal
     containerLandscape: {
       flexDirection: 'row',
       alignItems: 'stretch',
@@ -215,7 +213,6 @@ const createStyles = (scale) =>
       borderBottomRightRadius: 28,
       overflow: 'hidden',
     },
-    // Estilos del header para el modo horizontal
     topSectionLandscape: { 
       flex: 1, 
       justifyContent: 'center',
@@ -324,7 +321,6 @@ const createStyles = (scale) =>
       paddingBottom: 20 * scale,
       justifyContent: 'space-between',
     },
-    // Estilos del panel de acciones para el modo horizontal
     bottomSectionLandscape: { 
       flex: 1.2, 
       paddingHorizontal: 32 * scale,

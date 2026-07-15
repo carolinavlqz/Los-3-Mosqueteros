@@ -35,7 +35,7 @@ const AREA_ROUTES = {
 const BASE_WIDTH = 375;
 const TABLET_BREAKPOINT = 600;
 const MAX_CONTENT_WIDTH_PHONE = 440;
-const MAX_CONTENT_WIDTH_TABLET = 520;
+const MAX_CONTENT_WIDTH_TABLET = 760; // Ampliado para soportar el diseño de doble columna en tabletas
 
 function useScale() {
   const { width, height } = useWindowDimensions();
@@ -43,8 +43,11 @@ function useScale() {
   const isLandscape = width > height;
   const isTablet = width >= TABLET_BREAKPOINT;
 
-  const contentWidth = isTablet
-    ? Math.min(width * 0.85, MAX_CONTENT_WIDTH_TABLET)
+  // Si está en horizontal, permitimos un contenedor más ancho
+  const contentWidth = isLandscape
+    ? Math.min(width * 0.9, MAX_CONTENT_WIDTH_TABLET)
+    : isTablet
+    ? Math.min(width * 0.85, MAX_CONTENT_WIDTH_PHONE * 1.1)
     : Math.min(width * 0.92, MAX_CONTENT_WIDTH_PHONE);
 
   const rawScale = contentWidth / BASE_WIDTH;
@@ -62,8 +65,8 @@ function useScale() {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { scale, contentWidth } = useScale();
-  const s = createStyles(scale);
+  const { scale, contentWidth, isLandscape } = useScale();
+  const s = createStyles(scale, isLandscape);
 
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
@@ -198,7 +201,6 @@ export default function LoginScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={[s.container, { width: contentWidth }]}>
-              
               <Animated.View
                 style={[
                   s.animatedCard,
@@ -208,110 +210,118 @@ export default function LoginScreen() {
                   },
                 ]}
               >
-                {/* Cambiado a tint="dark" e intensidad ajustada para el efecto cristal transparente */}
                 <BlurView 
                   intensity={Platform.OS === 'ios' ? 45 : 70} 
                   tint="dark" 
                   style={s.card}
                 >
                   
-                  {/* ================= HEADER INTERNO ================= */}
-                  <View style={s.header}>
-                    <View style={s.logoMockContainer}>
-                      <Ionicons name="medical" size={44} color="#FFFFFF" />
-                      <View style={s.logoPill} />
+                  {/* Contenedor flexible que cambia a fila en landscape */}
+                  <View style={s.contentLayout}>
+                    
+                    {/* Columna Izquierda: Logo y Títulos */}
+                    <View style={s.leftColumn}>
+                      <View style={s.header}>
+                        <View style={s.logoMockContainer}>
+                          <Ionicons name="medical" size={44 * scale} color="#FFFFFF" />
+                          <View style={s.logoPill} />
+                        </View>
+                        <Text style={s.hospital}>MÉDICA MIA</Text>
+                        <Text style={s.subtitle}>
+                          Sistema Integral de Control de Visitas
+                        </Text>
+                      </View>
                     </View>
 
-                    <Text style={s.hospital}>MÉDICA MIA</Text>
-                    <Text style={s.subtitle}>
-                      Sistema Integral de Control de Visitas
-                    </Text>
+                    {/* Columna Derecha: Formulario */}
+                    <View style={s.rightColumn}>
+                      {/* USUARIO */}
+                      <Text style={s.label}>User</Text>
+                      <View
+                        style={[
+                          s.inputContainer,
+                          focusedInput === "usuario" && s.inputContainerFocused,
+                        ]}
+                      >
+                        <Ionicons
+                          name="person-outline"
+                          size={20 * scale}
+                          color={focusedInput === "usuario" ? "#FFFFFF" : "#cbd5e1"}
+                        />
+                        <TextInput
+                          style={s.input}
+                          placeholder="Ingrese su usuario"
+                          placeholderTextColor="#94a3b8"
+                          autoCapitalize="none"
+                          value={usuario}
+                          onChangeText={setUsuario}
+                          onFocus={() => setFocusedInput("usuario")}
+                          onBlur={() => setFocusedInput("")}
+                        />
+                      </View>
+
+                      {/* CONTRASEÑA */}
+                      <Text style={s.label}>Password</Text>
+                      <View
+                        style={[
+                          s.inputContainer,
+                          focusedInput === "password" && s.inputContainerFocused,
+                        ]}
+                      >
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={20 * scale}
+                          color={focusedInput === "password" ? "#FFFFFF" : "#cbd5e1"}
+                        />
+                        <TextInput
+                          style={s.input}
+                          placeholder="Ingrese su contraseña"
+                          placeholderTextColor="#94a3b8"
+                          secureTextEntry={!mostrarPassword}
+                          value={password}
+                          onChangeText={setPassword}
+                          onFocus={() => setFocusedInput("password")}
+                          onBlur={() => setFocusedInput("")}
+                        />
+                        <TouchableOpacity
+                          onPress={() => setMostrarPassword(!mostrarPassword)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons
+                            name={mostrarPassword ? "eye-off-outline" : "eye-outline"}
+                            size={20 * scale}
+                            color="#cbd5e1"
+                          />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* RECUPERAR CONTRASEÑA */}
+                      <TouchableOpacity onPress={recuperarPassword}>
+                        <Text style={s.forgot}>¿Olvidó su contraseña?</Text>
+                      </TouchableOpacity>
+
+                      {/* BOTÓN INICIAR SESIÓN */}
+                      <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                        <TouchableOpacity
+                          activeOpacity={1}
+                          onPressIn={pressIn}
+                          onPressOut={pressOut}
+                          onPress={iniciarSesion}
+                          style={s.loginButton}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color="#031e5d" />
+                          ) : (
+                            <>
+                              <Ionicons name="log-in-outline" color="#031e5d" size={20 * scale} />
+                              <Text style={s.loginText}>Iniciar Sesión</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
+                    </View>
+
                   </View>
-
-                  {/* USUARIO */}
-                  <Text style={s.label}>User</Text>
-                  <View
-                    style={[
-                      s.inputContainer,
-                      focusedInput === "usuario" && s.inputContainerFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={focusedInput === "usuario" ? "#FFFFFF" : "#cbd5e1"}
-                    />
-                    <TextInput
-                      style={s.input}
-                      placeholder="Ingrese su usuario"
-                      placeholderTextColor="#94a3b8"
-                      autoCapitalize="none"
-                      value={usuario}
-                      onChangeText={setUsuario}
-                      onFocus={() => setFocusedInput("usuario")}
-                      onBlur={() => setFocusedInput("")}
-                    />
-                  </View>
-
-                  {/* CONTRASEÑA */}
-                  <Text style={s.label}>Password</Text>
-                  <View
-                    style={[
-                      s.inputContainer,
-                      focusedInput === "password" && s.inputContainerFocused,
-                    ]}
-                  >
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color={focusedInput === "password" ? "#FFFFFF" : "#cbd5e1"}
-                    />
-                    <TextInput
-                      style={s.input}
-                      placeholder="Ingrese su contraseña"
-                      placeholderTextColor="#94a3b8"
-                      secureTextEntry={!mostrarPassword}
-                      value={password}
-                      onChangeText={setPassword}
-                      onFocus={() => setFocusedInput("password")}
-                      onBlur={() => setFocusedInput("")}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setMostrarPassword(!mostrarPassword)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons
-                        name={mostrarPassword ? "eye-off-outline" : "eye-outline"}
-                        size={20}
-                        color="#cbd5e1"
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* RECUPERAR CONTRASEÑA */}
-                  <TouchableOpacity onPress={recuperarPassword}>
-                    <Text style={s.forgot}>¿Olvidó su contraseña?</Text>
-                  </TouchableOpacity>
-
-                  {/* BOTÓN INICIAR SESIÓN */}
-                  <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      onPressIn={pressIn}
-                      onPressOut={pressOut}
-                      onPress={iniciarSesion}
-                      style={s.loginButton}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color="#031e5d" />
-                      ) : (
-                        <>
-                          <Ionicons name="log-in-outline" color="#031e5d" size={20} />
-                          <Text style={s.loginText}>Iniciar Sesión</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </Animated.View>
 
                   {/* ================= FOOTER INTERNO ================= */}
                   <View style={s.footerContainer}>
@@ -322,7 +332,6 @@ export default function LoginScreen() {
 
                 </BlurView>
               </Animated.View>
-
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -331,7 +340,7 @@ export default function LoginScreen() {
   );
 }
 
-const createStyles = (scale) =>
+const createStyles = (scale, isLandscape) =>
   StyleSheet.create({
     backgroundImage: {
       flex: 1,
@@ -340,7 +349,7 @@ const createStyles = (scale) =>
     },
     safeArea: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.3)", // Un poco más oscuro para que el vidrio destaque
+      backgroundColor: "rgba(0,0,0,0.3)",
     },
     splash: {
       alignItems: "center",
@@ -354,6 +363,7 @@ const createStyles = (scale) =>
     },
     container: {
       alignItems: "center",
+      width: "100%",
     },
     animatedCard: {
       width: "100%",
@@ -373,13 +383,30 @@ const createStyles = (scale) =>
     },
     card: {
       width: "100%",
-      paddingHorizontal: 24 * scale,
-      paddingTop: 32 * scale,
-      paddingBottom: 28 * scale,
-      // Ultra transparente con bordes sutiles brillantes
+      // Si está en horizontal, reducimos un poco el padding vertical para evitar scroll innecesario
+      paddingHorizontal: (isLandscape ? 32 : 24) * scale,
+      paddingTop: (isLandscape ? 24 : 32) * scale,
+      paddingBottom: (isLandscape ? 20 : 28) * scale,
       backgroundColor: "rgba(255, 255, 255, 0.12)", 
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.25)",
+    },
+
+    /*************************
+     * LAYOUT RESPONSIVO
+     *************************/
+    contentLayout: {
+      flexDirection: isLandscape ? "row" : "column",
+      alignItems: isLandscape ? "center" : "stretch",
+      justifyContent: "space-between",
+    },
+    leftColumn: {
+      flex: isLandscape ? 1 : undefined,
+      paddingRight: isLandscape ? 30 * scale : 0,
+      marginBottom: isLandscape ? 0 : 20 * scale,
+    },
+    rightColumn: {
+      flex: isLandscape ? 1.2 : undefined,
     },
 
     /*************************
@@ -387,7 +414,6 @@ const createStyles = (scale) =>
      *************************/
     header: {
       alignItems: "center",
-      marginBottom: 20 * scale,
     },
     logoMockContainer: {
       flexDirection: "row",
@@ -396,18 +422,19 @@ const createStyles = (scale) =>
       marginBottom: 8 * scale,
     },
     logoPill: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: "#e11d48", // Rojo vibrante
+      width: 10 * scale,
+      height: 10 * scale,
+      borderRadius: 5 * scale,
+      backgroundColor: "#e11d48", 
       marginLeft: 4,
-      marginTop: -20,
+      marginTop: -20 * scale,
     },
     hospital: {
       color: "#FFFFFF",
       fontSize: 28 * scale,
       fontWeight: "800",
       letterSpacing: 1.2,
+      textAlign: "center",
     },
     subtitle: {
       color: "#e2e8f0",
@@ -425,7 +452,7 @@ const createStyles = (scale) =>
       fontWeight: "700",
       color: "#f8fafc",
       marginBottom: 6 * scale,
-      marginTop: 12 * scale,
+      marginTop: isLandscape ? 4 * scale : 12 * scale,
     },
     inputContainer: {
       flexDirection: "row",
@@ -467,7 +494,7 @@ const createStyles = (scale) =>
       justifyContent: "center",
       alignItems: "center",
       flexDirection: "row",
-      backgroundColor: "#FFFFFF", // Botón sólido blanco para un contraste perfecto sobre el cristal oscuro
+      backgroundColor: "#FFFFFF",
     },
     loginText: {
       color: "#031e5d",
@@ -480,7 +507,7 @@ const createStyles = (scale) =>
      * FOOTER
      *************************/
     footerContainer: {
-      marginTop: 28 * scale,
+      marginTop: isLandscape ? 16 * scale : 28 * scale,
       alignItems: "center",
     },
     version: {
